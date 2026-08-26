@@ -1,36 +1,12 @@
 import { useState } from "react";
 import "./App.css";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 function App() {
   return (
     <>
-    
-
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Card Title</CardTitle>
-            <CardDescription>Card Description</CardDescription>
-            <CardAction>Card Action</CardAction>
-          </CardHeader>
-          <CardContent>
-            <p>Card Content</p>
-          </CardContent>
-          <CardFooter>
-            <p>Card Footer</p>
-          </CardFooter>
-        </Card>
- 
+      <button class="btn btn-primary">One</button>
+      <button class="btn btn-secondary">Two</button>
+      <button class="btn btn-accent btn-outline">Three</button>
     </>
   );
 }
