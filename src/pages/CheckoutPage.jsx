@@ -2,7 +2,7 @@ import React from "react";
 import { useState } from 'react';
 import OrderConfirmed from "../components/OrderConfirmed";
 
-export default function Checkout() {
+export default function CheckoutPage() {
 const [ showConfirmed, setShowConfirmed] = useState(false)
 const handlePlaceOrder = () => {
   setShowConfirmed(true)

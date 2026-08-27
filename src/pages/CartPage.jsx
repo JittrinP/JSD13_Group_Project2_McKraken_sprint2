@@ -1,4 +1,4 @@
-export default function Cart() {
+export default function CartPage() {
   return (
     <>
       <div className="bg-gray-400 min-h-screen flex items-center justify-center">
