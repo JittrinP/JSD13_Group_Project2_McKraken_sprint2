@@ -1,4 +1,7 @@
+import { Link } from "react-router-dom";
 export default function Footer() {
+
+
   return (
     <>
       <div>
@@ -11,8 +14,8 @@ export default function Footer() {
                 Atelier de Flora
               </h2>
               <div className="flex flex-row gap-6 text-xs text-center justify-center mb-4 mt-4">
-                <p>Shipping</p>
-                <p>Contact Us</p>
+                <Link to="checkout" className="hover:cursor-pointer">Shipping</Link>
+                 <Link to="/#shop-detail">Contact Us</Link>
               </div>
               <p className="text-base mb-4">© 2026 Atelier de Flora</p>
             </div>
@@ -30,8 +33,8 @@ export default function Footer() {
               </div>
 
               <div className="flex flex-row gap-6 text-xs text-center justify-center mb-4 mt-4">
-                <p>Shipping</p>
-                <p>Contact Us</p>
+                <Link to="checkout" className="hover:cursor-pointer">Shipping</Link>
+                 <Link to="/#shop-detail">Contact Us</Link>
               </div>
    
           </div>
