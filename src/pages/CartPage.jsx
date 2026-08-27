@@ -1,4 +1,4 @@
-export default function Cart() {
+export default function CartPage() {
   return (
     <>
       <div className="bg-[#F9F6F0] text-[#4A4A4A] antialiased">
