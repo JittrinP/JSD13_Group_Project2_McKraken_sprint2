@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { MOCK_PRODUCTS, addToCart } from "../mock-data/product-cart";
+import { useNavigate } from "react-router-dom";
+import { CartProvider, useCart } from "../context/CartContext";
+// import { MOCK_PRODUCTS, addToCart } from "../mock-data/product-cart"; // เดิมใช้กับ DEV block ด้านล่าง เก็บไว้อ้างอิง
 
 function formatPrice(value) {
   return `$${value.toFixed(2)}`;
@@ -52,20 +54,20 @@ function CartItem({ item, onIncrease, onDecrease, onRemove }) {
         <div className="flex justify-between items-end mt-4">
           <div className="inline-flex items-center bg-[#586158] text-white text-xs sm:text-sm rounded-lg px-2 py-1 gap-2.5 shadow-sm">
             <button
-              onClick={() => onIncrease(item.product_id)}
-              aria-label={`Increase ${item.name}`}
-              className="hover:opacity-80 font-bold px-1 py-0.5"
-            >
-              +
-            </button>
-            <span className="font-medium">{item.quantity}</span>
-            <button
               onClick={() => onDecrease(item.product_id)}
               disabled={item.quantity <= 1}
               aria-label={`Decrease ${item.name}`}
               className="hover:opacity-80 font-bold px-1 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               -
+            </button>
+            <span className="font-medium">{item.quantity}</span>
+            <button
+              onClick={() => onIncrease(item.product_id)}
+              aria-label={`Increase ${item.name}`}
+              className="hover:opacity-80 font-bold px-1 py-0.5"
+            >
+              +
             </button>
           </div>
           <span className="font-semibold text-base sm:text-lg text-[#4A4A4A]">
@@ -77,57 +79,60 @@ function CartItem({ item, onIncrease, onDecrease, onRemove }) {
   );
 }
 
-export default function Cart() {
-  const [items, setItems] = useState([]);
+export default function CartPage() {
+  return (
+    <CartProvider>
+      <Cart />
+    </CartProvider>
+  );
+}
+// TODO: ตอน ProductsPage พร้อมใช้งานจริง ให้ย้าย <CartProvider> ไปครอบที่ Layout.jsx
+// แทน เพื่อให้ ProductsPage กับ CartPage แชร์ตะกร้าเดียวกันได้ข้ามหน้า
 
-  function handleIncrease(productId) {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.product_id === productId
-          ? { ...item, quantity: item.quantity + 1 }
-          : item,
-      ),
-    );
-  }
+function Cart() {
+  const navigate = useNavigate();
+  const { items, increaseQty, decreaseQty, removeItem } = useCart();
+  const [giftNote, setGiftNote] = useState("");
 
-  function handleDecrease(productId) {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.product_id === productId
-          ? { ...item, quantity: Math.max(1, item.quantity - 1) }
-          : item,
-      ),
-    );
-  }
+  const subTotal = items.reduce(
+    (sum, item) => sum + item.unit_price * item.quantity,
+    0,
+  );
 
-  function handleRemove(productId) {
-    setItems((prev) => prev.filter((item) => item.product_id !== productId));
+  function handleCheckout() {
+    if (items.length === 0) return;
+    console.log(items, giftNote);
+    navigate("/checkout", { state: { items, giftNote } });
   }
 
   return (
-    <div className="bg-[#F9F6F0] text-[#4A4A4A] antialiased">
+    <div className="min-h-screen bg-[#F9F6F0] text-[#4A4A4A] antialiased">
       {/* Main Content Area */}
       <main className="max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-10">
-        {/* DEV ONLY — จำลองการกด Add to Cart จากหน้า Product / ลบทั้งบล็อกก่อน merge */}
-        <div className="mb-6 p-3 rounded-xl border border-dashed border-[#586158]/40 flex flex-wrap items-center gap-2">
-          <span className="text-[12px] font-medium text-[#586158]">DEV:</span>
-          {MOCK_PRODUCTS.map((product) => (
+        {/*
+          DEV ONLY (ปิดใช้งานแล้ว) — เดิมจำลองการกด Add to Cart จากหน้า Product
+          ตอนนี้ใช้ CartContext (src/context/CartContext.jsx) แทนแล้ว
+          เก็บโค้ดเดิมไว้อ้างอิงเผื่อจำเป็นต้องย้อนกลับมาดู
+
+          <div className="mb-6 p-3 rounded-xl border border-dashed border-[#586158]/40 flex flex-wrap items-center gap-2">
+            <span className="text-[12px] font-medium text-[#586158]">DEV:</span>
+            {MOCK_PRODUCTS.map((product) => (
+              <button
+                key={product._id}
+                onClick={() => setItems((prev) => addToCart(prev, product))}
+                className="text-[12px] px-3 py-1.5 rounded-lg bg-white border border-black/10 hover:border-[#586158]"
+              >
+                + {product.name}
+              </button>
+            ))}
             <button
-              key={product._id}
-              onClick={() => setItems((prev) => addToCart(prev, product))}
-              className="text-[12px] px-3 py-1.5 rounded-lg bg-white border border-black/10 hover:border-[#586158]"
+              onClick={() => setItems([])}
+              className="text-[12px] px-3 py-1.5 rounded-lg bg-white border border-black/10 hover:border-red-400 hover:text-red-500 ml-auto"
             >
-              + {product.name}
+              ล้างตะกร้า
             </button>
-          ))}
-          <button
-            onClick={() => setItems([])}
-            className="text-[12px] px-3 py-1.5 rounded-lg bg-white border border-black/10 hover:border-red-400 hover:text-red-500 ml-auto"
-          >
-            ล้างตะกร้า
-          </button>
-        </div>
-        {/* END DEV ONLY */}
+          </div>
+        */}
 
         {/* Page Title & Actions */}
         <div className="flex justify-between items-center mb-6 sm:mb-8">
@@ -162,15 +167,21 @@ export default function Cart() {
               </button>
             </div>
 
-            {items.map((item) => (
-              <CartItem
-                key={item.product_id}
-                item={item}
-                onIncrease={handleIncrease}
-                onDecrease={handleDecrease}
-                onRemove={handleRemove}
-              />
-            ))}
+            {items.length === 0 ? (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-10 border border-black/5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] text-center text-[#4A4A4A]/60">
+                ยังไม่มีของในตะกร้า
+              </div>
+            ) : (
+              items.map((item) => (
+                <CartItem
+                  key={item.product_id}
+                  item={item}
+                  onIncrease={increaseQty}
+                  onDecrease={decreaseQty}
+                  onRemove={removeItem}
+                />
+              ))
+            )}
           </div>
 
           {/* Items Summary Card */}
@@ -180,12 +191,20 @@ export default function Cart() {
                 <h2 className="text-xl sm:text-2xl font-bold text-[#586158] mb-3 tracking-tight">
                   Items Summary
                 </h2>
-                <label className="block text-[13px] text-[#4A4A4A]/80 font-medium mb-1">
+                <label
+                  htmlFor="gift-note"
+                  className="block text-[13px] text-[#4A4A4A]/80 font-medium mb-1"
+                >
                   Add a Gift note :
                 </label>
-                <p className="text-[13px] text-[#4A4A4A]/40 italic">
-                  Write your message here...
-                </p>
+                <textarea
+                  id="gift-note"
+                  value={giftNote}
+                  onChange={(e) => setGiftNote(e.target.value)}
+                  placeholder="Write your message here..."
+                  rows={3}
+                  className="w-full text-[13px] text-[#4A4A4A] placeholder:text-[#4A4A4A]/40 placeholder:italic bg-white/60 border border-black/10 rounded-lg p-2 resize-none focus:outline-none focus:border-[#586158]/50"
+                />
               </div>
 
               <div className="pt-4 border-t border-gray-100">
@@ -193,15 +212,16 @@ export default function Cart() {
                   <span className="text-[14px] font-medium text-[#4A4A4A]">
                     Sub-Total:
                   </span>
-                  <span className="text-base sm:text-lg font-bold text-[#4A4A4A] sm:hidden">
-                    $128.00
-                  </span>
-                  <span className="text-base sm:text-lg font-bold text-[#4A4A4A] hidden sm:inline">
-                    $32.00
+                  <span className="text-base sm:text-lg font-bold text-[#4A4A4A]">
+                    {formatPrice(subTotal)}
                   </span>
                 </div>
 
-                <button className="w-full bg-[#586158] text-white rounded-xl py-3.5 px-4 text-[14px] font-medium hover:bg-[#586158]/90 transition-all flex items-center justify-center gap-2 shadow-sm">
+                <button
+                  onClick={handleCheckout}
+                  disabled={items.length === 0}
+                  className="w-full bg-[#586158] text-white rounded-xl py-3.5 px-4 text-[14px] font-medium hover:bg-[#586158]/90 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#586158]"
+                >
                   Check Out →
                 </button>
               </div>
