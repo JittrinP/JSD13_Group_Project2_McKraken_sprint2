@@ -4,7 +4,7 @@ import "./App.css";
 
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
-//import ProductsPage from "./pages/ProductsPage";
+// import ProductsPage from "./pages/ProductsPage";
 //import ShopBlogPage from "./pages/ShopBlogPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -17,7 +17,7 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: "/", element: <HomePage /> },
-      //{ path: "/products", element: <ProductsPage /> },
+      // { path: "/products", element: <ProductsPage /> },
       //{ path: "/shopblog", element: <ShopBlogPage /> },
       { path: "/cart", element: <CartPage /> },
       { path: "/checkout", element: <CheckoutPage /> },
