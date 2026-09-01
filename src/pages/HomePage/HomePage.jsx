@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Nevbar from "../../components/Navbar";
-import cpn_careguide from "./cpn_careguide";
+import Cpn_Careguide from "./Cpn_Careguide";
 
 export default function HomePage() {
 
@@ -19,9 +19,9 @@ export default function HomePage() {
     <div>
       <Nevbar />
       <div className="bg-tertiary min-h-screen flex items-center justify-center">
-        <cpn_careguide />
+        <Cpn_Careguide />
 
-        
+
         {/* shop detail ไปทำต่อนะครับ ผมขอให้เก็บ id shop-detail ไว้ เอาไว้เชื่อมกับ Footer */}
         <section id="shop-detail" className="min-h-screen p-10">
           <h2 className="text-2xl font-bold">Shop Detail</h2>

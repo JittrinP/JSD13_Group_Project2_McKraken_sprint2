@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function cpn_careguide() {
+export default function Cpn_Careguide() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
