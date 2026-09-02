@@ -3,12 +3,12 @@ import { useState } from "react";
 import "./App.css";
 
 import Layout from "./components/Layout";
-import HomePage from "./pages/HomePage";
+import HomePage from "./pages/HomePage/HomePage";
 //import ProductsPage from "./pages/ProductsPage";
 //import ShopBlogPage from "./pages/ShopBlogPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
-//import CustomerDashboardPage from "./pages/CustomerDashboardPage";
+import CustomerDashboardPage from "./pages/customer_dashboard/CustomerDashboardPage";
 //import AdminDashboardPage from "./pages/AdminDashboardPage";
 
 const router = createBrowserRouter([
@@ -21,7 +21,7 @@ const router = createBrowserRouter([
       //{ path: "/shopblog", element: <ShopBlogPage /> },
       { path: "/cart", element: <CartPage /> },
       { path: "/checkout", element: <CheckoutPage /> },
-      //{ path: "/customerdashboard", element: <CustomerDashboardPage /> },
+      { path: "/customerdashboard", element: <CustomerDashboardPage /> },
       //{ path: "/admindashboard", element: <AdminDashboardPage /> },
     ],
   },
