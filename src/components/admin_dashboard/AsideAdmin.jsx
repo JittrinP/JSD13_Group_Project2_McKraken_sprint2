@@ -1,48 +1,47 @@
 import { NavLink } from "react-router-dom";
-
-import dashboardIcon from "../../assets/asideadmin/dashboard.svg";
-import productIcon from "../../assets/asideadmin/product.svg";
-import ordersIcon from "../../assets/asideadmin/orders.svg";
-import contentIcon from "../../assets/asideadmin/content.svg";
+import { LayoutDashboard, Package, ShoppingCart, FileText } from "lucide-react";
 
 const menuItems = [
-  { id: "overview", name: "Dashboard", path: "overview", icon: dashboardIcon },
-  { id: "product-edit", name: "Product", path: "product-edit", icon: productIcon },
-  { id: "order-list", name: "Orders", path: "order-list", icon: ordersIcon },
-  { id: "content-edit", name: "ContentIcon", path: "content-edit", icon: contentIcon },
+  { id: "overview", name: "Dashboard", path: "overview", Icon: LayoutDashboard },
+  { id: "product-edit", name: "Product", path: "product-edit", Icon: Package },
+  { id: "order-list", name: "Orders", path: "order-list", Icon: ShoppingCart },
+  { id: "content-edit", name: "Content", path: "content-edit", Icon: FileText },
 ];
 
 export default function AsideAdmin() {
   return (
-    <aside className="w-[322px] rounded-[12px] border border-[rgba(219,217,217,0.5)] bg-[#F4F7F8] p-[25px]">
+    <aside
+      className="
+        w-full
+        lg:w-[322px] lg:rounded-[12px] lg:border lg:border-[rgba(219,217,217,0.5)]
+        lg:bg-[#F4F7F8] lg:p-[25px]
+      "
+    >
       <nav>
-        <ul className="flex w-full flex-col gap-[4px]">
+        <ul
+          className="
+            flex w-full snap-x snap-mandatory gap-[10px]
+            overflow-x-auto overscroll-x-contain scroll-px-[16px] pb-[4px]
+            [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
+            lg:flex-col lg:gap-[4px] lg:overflow-x-visible lg:pb-0
+          "
+        >
           {menuItems.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className="shrink-0 snap-start lg:w-full lg:shrink">
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `group flex w-full items-center gap-[12px] rounded-[8px] p-[12px] font-['Plus_Jakarta_Sans',sans-serif] text-[16px] leading-[24px] transition-colors ${
-                    isActive
-                      ? "bg-[#475586] text-white"
-                      : "text-[#4A4A4A] hover:bg-[#475586] hover:text-white"
-                  }`
+                  `flex items-center justify-center gap-[12px] rounded-[1000px] px-[20px] py-[4px]
+                   font-['Plus_Jakarta_Sans',sans-serif] text-[16px] font-semibold leading-[36px] transition-colors
+                   lg:w-full lg:justify-start lg:rounded-[8px] lg:p-[12px] lg:font-normal lg:leading-[24px] ${
+                     isActive
+                       ? "bg-[#475486] text-white lg:bg-[#475586]"
+                       : "bg-[#E8F4F4] text-[#586158] lg:bg-transparent lg:text-[#4A4A4A] lg:hover:bg-[#475586] lg:hover:text-white"
+                   }`
                 }
               >
-                {({ isActive }) => (
-                  <>
-                    <img
-                      src={item.icon}
-                      alt=""
-                      className={`size-[16px] shrink-0 transition-all ${
-                        isActive
-                          ? "brightness-0 invert"
-                          : "group-hover:brightness-0 group-hover:invert"
-                      }`}
-                    />
-                    <span className="whitespace-nowrap">{item.name}</span>
-                  </>
-                )}
+                <item.Icon className="hidden size-[16px] shrink-0 lg:block" strokeWidth={2} />
+                <span className="whitespace-nowrap">{item.name}</span>
               </NavLink>
             </li>
           ))}
