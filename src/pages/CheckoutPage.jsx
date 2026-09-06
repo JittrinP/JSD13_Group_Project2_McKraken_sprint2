@@ -2,6 +2,14 @@ import React from "react";
 import { useState } from "react";
 import OrderConfirmed from "../components/OrderConfirmed";
 
+import qrcode from "../assets/images/payment-qrcode.svg";
+import alipay from "../assets/images/payment-alipay.svg";
+import jcb from "../assets/images/payment-jcb.svg";
+import mastercard from "../assets/images/payment-mastercard.svg";
+import visa from "../assets/images/payment-visa.svg";
+import unionpay from "../assets/images/payment-unionpay.svg";
+const paymentMethods = [qrcode, alipay, jcb, mastercard, visa, unionpay];
+
 export default function CheckoutPage() {
   const [showConfirmed, setShowConfirmed] = useState(false);
   const handlePlaceOrder = () => {
@@ -90,23 +98,37 @@ export default function CheckoutPage() {
         </div>
       </section>
 
-      <div className="flex flex-row justify-end mt-8 gap-4">
-        <div className="flex flex-col items-right p-4 gap-2">
-          <button
-            onClick={handlePlaceOrder}
-            className="text-xl bg-primary p-2 w-[200px] rounded-full text-[#FFFFFF] shadow-md hover:bg-primary/90"
-          >
-            Confirmed Order
-          </button>
-          {showConfirmed && (
-            <OrderConfirmed onClose={() => setShowConfirmed(false)} />
-          )}
+      <section className="Payment-Method mt-8">
+        <h1 className="text-3xl font-bold font-display mb-4">Payment Method</h1>
+        <div className="flex flex-row justify-between items-center gap-4 bg-white p-4">
+          <ul className="flex flex-row gap-6">
+            {paymentMethods.map((method, index) => (
+              <li key={index}>
+                <img
+                  src={method}
+                  alt={`Payment Method ${index + 1}`}
+                  className="w-20 h-20"
+                />
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-col items-right p-4 gap-2">
+            <button
+              onClick={handlePlaceOrder}
+              className="text-xl bg-primary p-2 w-[200px] rounded-full text-[#FFFFFF] shadow-md hover:bg-primary/90"
+            >
+              Confirmed Order
+            </button>
+            {showConfirmed && (
+              <OrderConfirmed onClose={() => setShowConfirmed(false)} />
+            )}
 
-          <button className="text-xl border-1 border-solid p-2 w-[200px] rounded-full text-primary shadow-md hover:text-primary/80">
-            Cancel
-          </button>
+            <button className="text-xl border-1 border-solid p-2 w-[200px] rounded-full text-primary shadow-md hover:text-primary/80">
+              Cancel
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
