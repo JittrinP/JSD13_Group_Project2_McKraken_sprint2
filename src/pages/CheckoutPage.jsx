@@ -1,5 +1,6 @@
 import React from "react";
 import { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 import OrderConfirmed from "../components/OrderConfirmed";
 
 import qrcode from "../assets/images/payment-qrcode.svg";
@@ -123,9 +124,9 @@ export default function CheckoutPage() {
               <OrderConfirmed onClose={() => setShowConfirmed(false)} />
             )}
 
-            <button className="text-xl border-1 border-solid p-2 w-[200px] rounded-full text-primary shadow-md hover:text-primary/80">
+            <Link to="/cart" className="text-xl text-center border-solid p-2 w-[200px] rounded-full text-primary shadow-md hover:text-primary/80">
               Cancel
-            </button>
+            </Link>
           </div>
         </div>
       </section>
