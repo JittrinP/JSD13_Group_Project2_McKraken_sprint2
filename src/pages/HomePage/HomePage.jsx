@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import Nevbar from "../../components/Navbar";
-import Cpn_Careguide from "./Cpn_Careguide";
+import Careguide from "./_components/Careguide";
 
 export default function HomePage() {
 
@@ -17,9 +16,8 @@ export default function HomePage() {
 
   return (
     <div>
-      <Nevbar />
       <div className="bg-tertiary min-h-screen flex items-center justify-center">
-        <Cpn_Careguide />
+        <Careguide />
 
 
         {/* shop detail ไปทำต่อนะครับ ผมขอให้เก็บ id shop-detail ไว้ เอาไว้เชื่อมกับ Footer */}
