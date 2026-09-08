@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartProvider, useCart } from "../context/CartContext";
 // import { MOCK_PRODUCTS, addToCart } from "../mock-data/product-cart"; // เดิมใช้กับ DEV block ด้านล่าง เก็บไว้อ้างอิง
@@ -80,19 +79,23 @@ function CartItem({ item, onIncrease, onDecrease, onRemove }) {
 }
 
 export default function CartPage() {
-  return (
-    <CartProvider>
-      <Cart />
-    </CartProvider>
-  );
+  // TEMP TEST — Albert ทดสอบ CartContext ข้ามหน้า: ย้าย <CartProvider> ไปครอบที่ Layout.jsx
+  // ชั่วคราวแล้ว (ดู comment ใน Layout.jsx) จึงปลด wrap ตรงนี้ออกก่อน ไม่งั้นจะเกิด Provider ซ้อนกัน
+  // 2 ชั้น ทำให้ Cart กับ Product เห็นคนละ store กัน — ต้อง uncomment กลับตอน revert หลังทดสอบเสร็จ
+  return <Cart />;
+  // return (
+  //   <CartProvider>
+  //     <Cart />
+  //   </CartProvider>
+  // );
 }
 // TODO: ตอน ProductsPage พร้อมใช้งานจริง ให้ย้าย <CartProvider> ไปครอบที่ Layout.jsx
 // แทน เพื่อให้ ProductsPage กับ CartPage แชร์ตะกร้าเดียวกันได้ข้ามหน้า
 
 function Cart() {
   const navigate = useNavigate();
-  const { items, increaseQty, decreaseQty, removeItem } = useCart();
-  const [giftNote, setGiftNote] = useState("");
+  const { items, increaseQty, decreaseQty, removeItem, giftNote, setGiftNote } =
+    useCart();
 
   const subTotal = items.reduce(
     (sum, item) => sum + item.unit_price * item.quantity,
@@ -101,8 +104,7 @@ function Cart() {
 
   function handleCheckout() {
     if (items.length === 0) return;
-    console.log(items, giftNote);
-    navigate("/checkout", { state: { items, giftNote } });
+    navigate("/checkout");
   }
 
   return (

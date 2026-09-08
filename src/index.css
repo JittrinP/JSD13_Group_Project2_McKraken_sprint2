@@ -1,7 +1,55 @@
-@import url('https://fonts.googleapis.com/css2?family=Literata:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Literata:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/figtree";
 
-@plugin "daisyui";
+/* daisyUI Theme Setup */
+@plugin "daisyui" {
+  themes:
+    mcstyle --default,
+    light;
+}
+
+@plugin "daisyui/theme" {
+  name: "mcstyle";
+  default: true;
+  --color-primary: #586158;
+  --color-secondary: #f9f6f0;
+  --color-accent: #f3f3f0;
+  --color-neutral: #4a4a4a;
+  --color-base-100: #fbf9f8;
+}
+
+/* Tailwind v4 Theme Variables */
+@theme inline {
+  --color-primary: #586158;
+  --color-secondary: #f9f6f0;
+  --color-accent: #f3f3f0;
+  --color-neutral: #4a4a4a;
+  --color-tertiary: #f3f3f0;
+  --color-base-100: #fbf9f8;
+  --color-background: #fbf9f8;
+  --font-display: "Literata", serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+/* shadcn/ui Variables */
+:root {
+  --background: #fbf9f8;
+  --foreground: #4a4a4a;
+  --primary: #586158;
+  --primary-foreground: #fbf9f8;
+  --secondary: #f9f6f0;
+  --secondary-foreground: #4a4a4a;
+  --accent: #f3f3f0;
+  --accent-foreground: #4a4a4a;
+  --card: #fbf9f8;
+  --card-foreground: #4a4a4a;
+  --popover: #fbf9f8;
+  --popover-foreground: #4a4a4a;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #586158;
+  --radius: 0.625rem;
+}

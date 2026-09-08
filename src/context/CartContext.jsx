@@ -9,6 +9,7 @@ const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
+  const [giftNote, setGiftNote] = useState("");
 
   function addToCart(product) {
     setItems((prev) => {
@@ -67,7 +68,16 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addToCart, increaseQty, decreaseQty, removeItem, clearCart }}
+      value={{
+        items,
+        addToCart,
+        increaseQty,
+        decreaseQty,
+        removeItem,
+        clearCart,
+        giftNote,
+        setGiftNote,
+      }}
     >
       {children}
     </CartContext.Provider>
