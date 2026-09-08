@@ -5,13 +5,13 @@ import Checkout from "../pages/CheckoutPage";
 
 export default function Layout() {
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
 
-      <div>
+      <div className="flex-1 flex flex-col">
         <Outlet />
       </div>
-  
+
       <Footer />
     </div>
   );

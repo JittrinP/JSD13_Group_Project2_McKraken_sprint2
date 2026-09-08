@@ -1,4 +1,4 @@
-[
+export default [
   {
     _id: "p01",
     name: "Red Rose Passion Bouquet",

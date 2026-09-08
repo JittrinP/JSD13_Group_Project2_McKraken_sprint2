@@ -4,11 +4,11 @@ import "./App.css";
 
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage/HomePage";
-//import ProductsPage from "./pages/ProductsPage";
+import ProductsPage from "./pages/Products/ProductsPage";
 //import ShopBlogPage from "./pages/ShopBlogPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
-//import CustomerDashboardPage from "./pages/CustomerDashboardPage";
+import CustomerDashboardPage from "./pages/customer_dashboard/CustomerDashboardPage";
 //import AdminDashboardPage from "./pages/AdminDashboardPage";
 
 const router = createBrowserRouter([
@@ -17,8 +17,8 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: "/", element: <HomePage /> },
-      //{ path: "/products", element: <ProductsPage /> },
-      //{ path: "/shopblog", element: <ShopBlogPage /> },
+      // { path: "/products", element: <ProductsPage /> },
+      // //{ path: "/shopblog", element: <ShopBlogPage /> },
       // { path: "/cart", element: <CartPage /> },
       // { path: "/checkout", element: <CheckoutPage /> },
       // { path: "/customerdashboard", element: <CustomerDashboardPage /> },
