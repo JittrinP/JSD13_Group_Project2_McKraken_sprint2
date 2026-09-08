@@ -105,7 +105,7 @@ export default function Careguide() {
                     <div>
                         <button
                             onClick={() => setIsOpen(true)}
-                            className="inline-block px-7 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-primary-foreground transition-all duration-200 cursor-pointer"
+                            className="inline-block px-7 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all duration-200 cursor-pointer"
                         >
                             Read Full Care Guide
                         </button>
