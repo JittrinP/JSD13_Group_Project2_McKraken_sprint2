@@ -50,11 +50,13 @@ export function CartProvider({ children }) {
 
   function decreaseQty(productId) {
     setItems((prev) =>
-      prev.map((item) =>
-        item.product_id === productId
-          ? { ...item, quantity: Math.max(1, item.quantity - 1) }
-          : item,
-      ),
+      prev
+        .map((item) =>
+          item.product_id === productId
+            ? { ...item, quantity: item.quantity - 1 }
+            : item,
+        )
+        .filter((item) => item.quantity > 0),
     );
   }
 
@@ -69,7 +71,7 @@ export function CartProvider({ children }) {
   return (
     <CartContext.Provider
       value={{
-        items,
+        items: items.filter(Boolean),
         addToCart,
         increaseQty,
         decreaseQty,

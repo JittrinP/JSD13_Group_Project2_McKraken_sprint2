@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CartProvider, useCart } from "../context/CartContext";
+import { useCart } from "../context/CartContext";
 // import { MOCK_PRODUCTS, addToCart } from "../mock-data/product-cart"; // เดิมใช้กับ DEV block ด้านล่าง เก็บไว้อ้างอิง
 
 function formatPrice(value) {
@@ -53,10 +54,9 @@ function CartItem({ item, onIncrease, onDecrease, onRemove }) {
         <div className="flex justify-between items-end mt-4">
           <div className="inline-flex items-center bg-[#586158] text-white text-xs sm:text-sm rounded-lg px-2 py-1 gap-2.5 shadow-sm">
             <button
-              onClick={() => onDecrease(item.product_id)}
-              disabled={item.quantity <= 1}
+              onClick={onDecrease}
               aria-label={`Decrease ${item.name}`}
-              className="hover:opacity-80 font-bold px-1 py-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="hover:opacity-80 font-bold px-1 py-0.5"
             >
               -
             </button>
@@ -96,6 +96,7 @@ function Cart() {
   const navigate = useNavigate();
   const { items, increaseQty, decreaseQty, removeItem, giftNote, setGiftNote } =
     useCart();
+  const [pendingRemoval, setPendingRemoval] = useState(null);
 
   const subTotal = items.reduce(
     (sum, item) => sum + item.unit_price * item.quantity,
@@ -105,6 +106,24 @@ function Cart() {
   function handleCheckout() {
     if (items.length === 0) return;
     navigate("/checkout");
+  }
+
+  function handleDecreaseRequest(item) {
+    if (item.quantity <= 1) {
+      setPendingRemoval(item);
+    } else {
+      decreaseQty(item.product_id);
+    }
+  }
+
+  function handleConfirmRemove() {
+    if (!pendingRemoval) return;
+    removeItem(pendingRemoval.product_id);
+    setPendingRemoval(null);
+  }
+
+  function handleCancelRemove() {
+    setPendingRemoval(null);
   }
 
   return (
@@ -179,7 +198,7 @@ function Cart() {
                   key={item.product_id}
                   item={item}
                   onIncrease={increaseQty}
-                  onDecrease={decreaseQty}
+                  onDecrease={() => handleDecreaseRequest(item)}
                   onRemove={removeItem}
                 />
               ))
@@ -231,6 +250,33 @@ function Cart() {
           </div>
         </div>
       </main>
+
+      {pendingRemoval && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.15)] max-w-sm w-full">
+            <h3 className="text-lg font-bold text-[#586158] mb-2">
+              Remove item?
+            </h3>
+            <p className="text-[13px] text-[#4A4A4A]/80 mb-6">
+              This will remove {pendingRemoval.name} from your cart.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCancelRemove}
+                className="text-[13px] px-4 py-2 rounded-lg border border-black/10 text-[#4A4A4A] hover:border-[#586158]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRemove}
+                className="text-[13px] px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

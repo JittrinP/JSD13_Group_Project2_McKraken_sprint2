@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback } from "react";
 import { useCart } from "../context/CartContext"; // Albert เพิ่มไว้ล่วงหน้าให้ผูกกับตะกร้า — รอแจ้งทีม
 
 const DEFAULT_IMAGE = "https://placehold.co/309x208/png";
@@ -14,16 +14,22 @@ function getOptimizedImageUrl(src) {
 }
 
 function ProductCard({ product, showQuantity = true }) {
-  const [quantity, setQuantity] = useState(1);
-  const { addToCart } = useCart(); // Albert เพิ่มไว้ล่วงหน้าให้ผูกกับตะกร้า — รอแจ้งทีม
+  const { items, addToCart, increaseQty, decreaseQty } = useCart(); // Albert เพิ่มไว้ล่วงหน้าให้ผูกกับตะกร้า — รอแจ้งทีม
+
+  const cartItem = items.find((item) => item.product_id === product._id);
+  const quantity = cartItem ? cartItem.quantity : 0;
 
   const handleDecrease = useCallback(() => {
-    setQuantity((prev) => (prev > 1 ? prev - 1 : prev));
-  }, []);
+    decreaseQty(product._id);
+  }, [decreaseQty, product._id]);
 
   const handleIncrease = useCallback(() => {
-    setQuantity((prev) => prev + 1);
-  }, []);
+    increaseQty(product._id);
+  }, [increaseQty, product._id]);
+
+  const handleAddToCart = useCallback(() => {
+    addToCart(product);
+  }, [addToCart, product]);
 
   return (
     <div className="product-card will-change-transform [contain:content] border border-gray-100 rounded-2xl p-3 bg-white shadow-sm">
@@ -52,29 +58,30 @@ function ProductCard({ product, showQuantity = true }) {
 
       <div className="flex items-center justify-between gap-2 pt-3">
         {showQuantity ? (
-          <>
-            <div className="qty-counter flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1 text-sm">
+          quantity === 0 ? (
+            <button
+              onClick={handleAddToCart} // Albert เพิ่มไว้ล่วงหน้าให้ผูกกับตะกร้า — รอแจ้งทีม
+              className="btn-add-cart w-full text-xs bg-primary text-white px-3 py-1.5 rounded-lg"
+            >
+              Add to cart
+            </button>
+          ) : (
+            <div className="qty-counter flex items-center justify-between gap-2 w-full border border-gray-200 rounded-lg px-2 py-1 text-sm">
               <button
                 onClick={handleDecrease}
-                className="hover:opacity-75 font-medium px-1"
+                className="hover:opacity-75 font-medium px-2"
               >
                 -
               </button>
               <span>{quantity}</span>
               <button
                 onClick={handleIncrease}
-                className="hover:opacity-75 font-medium px-1"
+                className="hover:opacity-75 font-medium px-2"
               >
                 +
               </button>
             </div>
-            <button
-              onClick={() => addToCart(product)} // Albert เพิ่มไว้ล่วงหน้าให้ผูกกับตะกร้า — รอแจ้งทีม
-              className="btn-add-cart text-xs bg-primary text-white px-3 py-1.5 rounded-lg"
-            >
-              Add to cart
-            </button>
-          </>
+          )
         ) : (
           <button className="w-full py-2 bg-neutral text-white text-xs rounded-lg hover:opacity-90">
             Order Now
