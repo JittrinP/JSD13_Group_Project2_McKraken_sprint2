@@ -22,7 +22,7 @@ export default function HomePage() {
 
         {/* shop detail ไปทำต่อนะครับ ผมขอให้เก็บ id shop-detail ไว้ เอาไว้เชื่อมกับ Footer */}
         <section id="shop-detail" className="min-h-screen p-10">
-          <h2 className="text-2xl font-bold">Shop Detail</h2>
+        
         </section>
       </div>
     </div>
