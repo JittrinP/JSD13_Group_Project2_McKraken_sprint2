@@ -1,66 +1,96 @@
 import PopShopBlog from "../components/PopShopBlog";
 import mockShopBlog from "../assets/mockData/mockShopBlog";
+
+// "Oct 12"
+function formatBlogDate(date) {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// guide -> "GUIDE", behind_the_scenes -> "BEHIND THE SCENES"
+const CATEGORY_LABELS = {
+  guide: "GUIDE",
+  behind_the_scenes: "BEHIND THE SCENES",
+  inspiration: "INSPIRATION",
+};
+function formatCategory(category) {
+  return CATEGORY_LABELS[category] ?? String(category ?? "").toUpperCase();
+}
+
 export default function ShopBlogPage() {
-  function formatBlogDate(date) {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  }
-  //เอา heroBlog มาจาก date ล่าสุด 1 ตัวมาแสดง
-  const heroBlogs = [...mockShopBlog]
+  // เอาเฉพาะบทความที่เผยแพร่แล้ว เรียงจากใหม่ไปเก่า
+  const publishedBlogs = [...mockShopBlog]
     .filter((shopblog) => shopblog.status === "published")
-    .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
-    .slice(0, 4);
+    .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+
+  // hero = ตัวล่าสุด 1 ตัว + ลิสต์ด้านข้าง 3 ตัว
+  const [heroBlog, ...sideBlogs] = publishedBlogs.slice(0, 4);
 
   return (
-    <>
-      <div className="bg-tertiary font-display p-6 text-primary">
-        <section className="md:flex flex-row">
-          {/*Hero ซ้ายตัวใหญ่*/}
-          {heroBlogs[0] && (
-            <div className="w-full  md:w-[60%] mb-12">
-              <img
-                src={heroBlogs[0].cover_image}
-                className="w-95 h-37 shrink-0 object-cover rounded-2xl md:w-169 md:h-72"
-              />
-              <div className="font-body mt-2 mb-2">
-                {heroBlogs[0].category} ·{" "}
-                {formatBlogDate(heroBlogs[0].created_at)}
-              </div>
-
-              <div className="font-bold text-3xl mb-3">
-                {heroBlogs[0].title}
-              </div>
-              <div className="text-base">{heroBlogs[0].description}</div>
-            </div>
-          )}
-
-          {/* hero ด้านข้าง */}
-          <div className="w-full flex flex-col md:w-[40%] m-2 md:pl-4">
-            {heroBlogs.slice(1).map((blog) => (
-              <div key={blog._id} className="flex flex-row justify-between
-              mb-4 gap-2">
-                <div className="">
-                  <div className="font-body mt-2 mb-2">
-                    {blog.category} · {formatBlogDate(blog.created_at)}
-                  </div>
-                  <div> {blog.title}</div>
-                </div>
+    <div className="bg-background font-body text-primary">
+      {/* Hero */}
+      <section className="bg-accent">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8 md:py-12">
+          <div className="flex flex-col gap-8 md:flex-row md:gap-10">
+            {/* Hero ซ้ายตัวใหญ่ */}
+            {heroBlog && (
+              <article className="md:w-3/5">
                 <img
-                  src={blog.cover_image}
-                  className="w-40 h-40 shrink-0 object-cover rounded-xl"
+                  src={heroBlog.cover_image}
+                  alt={heroBlog.title}
+                  className="aspect-7/3 w-full rounded-2xl bg-accent object-cover"
                 />
-              </div>
-            ))}
-          </div>
-        </section>
+                <p className="mt-4 text-xs tracking-wide text-neutral/70">
+                  {formatCategory(heroBlog.category)} ·{" "}
+                  {formatBlogDate(heroBlog.published_at)}
+                </p>
+                <h1 className="mt-2 font-display text-2xl font-bold leading-snug md:text-4xl">
+                  {heroBlog.title}
+                </h1>
+                <p className="mt-3 max-w-prose text-sm leading-relaxed text-neutral/80 md:text-base">
+                  {heroBlog.description}
+                </p>
+              </article>
+            )}
 
-        {/* PopShopBlog */}
-        <PopShopBlog />
-        {/* AllBlog */}
-        <section>AllBlog</section>
-      </div>
-    </>
+            {/* Hero ด้านข้าง 3 ตัว */}
+            {sideBlogs.length > 0 && (
+              <div className="flex flex-col gap-5 md:w-2/5">
+                {sideBlogs.map((blog) => (
+                  <article
+                    key={blog._id}
+                    className="flex flex-row justify-between gap-4"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs tracking-wide text-neutral/70">
+                        {formatCategory(blog.category)} ·{" "}
+                        {formatBlogDate(blog.published_at)}
+                      </p>
+                      <h2 className="mt-1 line-clamp-3 font-display text-base leading-snug md:text-lg">
+                        {blog.title}
+                      </h2>
+                    </div>
+                    <img
+                      src={blog.cover_image}
+                      alt={blog.title}
+                      className="size-28 shrink-0 rounded-xl bg-accent object-cover md:size-40"
+                    />
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Popular Blog + All Blog */}
+      <PopShopBlog
+        formatBlogDate={formatBlogDate}
+        formatCategory={formatCategory}
+      />
+    </div>
   );
 }
