@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext";
+import React from "react";
+import { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 import OrderConfirmed from "../components/OrderConfirmed";
 
 import qrcode from "../assets/images/payment-qrcode.svg";
