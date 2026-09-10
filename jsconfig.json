@@ -1,12 +1,10 @@
 {
-  "files": [],
-  "references": [
-   
-  ],
   "compilerOptions": {
-    "baseUrl": ".",
+    "target": "ES2022",
+    "moduleResolution": "Bundler",
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  "include": ["src/**/*"]
 }

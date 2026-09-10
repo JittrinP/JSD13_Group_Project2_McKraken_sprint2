@@ -4,7 +4,7 @@ import "./App.css";
 
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage/HomePage";
-//import ProductsPage from "./pages/ProductsPage";
+import ProductsPage from "./pages/ProductsPage";
 import ShopBlogPage from "./pages/ShopBlogPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";

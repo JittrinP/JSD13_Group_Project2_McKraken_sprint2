@@ -1,4 +1,4 @@
-export default [
+export const MOCK_PRODUCTS = [
   {
     _id: "p01",
     name: "Red Rose Passion Bouquet",
@@ -449,3 +449,5 @@ export default [
     recipe: [{ inventory_item_id: "inv01", quantity_required: 24 }],
   },
 ];
+
+
