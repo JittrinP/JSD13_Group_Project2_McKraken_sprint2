@@ -10,6 +10,7 @@ const CartContext = createContext(null);
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [giftNote, setGiftNote] = useState("");
+  const [orders, setOrders] = useState([]);     // 📍-เก็บประวัติออเดอร์
 
   function addToCart(product) {
     setItems((prev) => {
@@ -64,6 +65,35 @@ export function CartProvider({ children }) {
     setItems((prev) => prev.filter((item) => item.product_id !== productId));
   }
 
+// --------- 
+ function placeOrder({ deliveryAddress, serviceFee = 0, deliveryFee = 10 }) {
+    const subTotal = items.reduce(
+      (sum, item) => sum + item.unit_price * item.quantity,
+      0,
+    );
+    const grandTotal = subTotal + serviceFee + deliveryFee;
+
+    const newOrder = {
+      order_id: crypto.randomUUID(),
+      items,            // snapshot ของตะกร้า ณ ตอนกดสั่ง
+      giftNote,
+      deliveryAddress,
+      subTotal,
+      serviceFee,
+      deliveryFee,
+      grandTotal,
+      status: "confirmed",
+      created_at: new Date().toISOString(),
+    };
+
+    setOrders((prev) => [newOrder, ...prev]);
+    setItems([]);
+    setGiftNote("");
+
+    return newOrder; // ส่งกลับไปให้ CheckoutPage ใช้เปิด modal ทันที
+  }
+// --------- 
+
   function clearCart() {
     setItems([]);
   }
@@ -79,6 +109,8 @@ export function CartProvider({ children }) {
         clearCart,
         giftNote,
         setGiftNote,
+        orders,       // 📍
+        placeOrder,   // 📍
       }}
     >
       {children}
