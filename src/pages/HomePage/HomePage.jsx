@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Careguide from "./_components/Careguide";
+import CustomerReview from "./_components/CustomerReview";
 
 export default function HomePage() {
 
@@ -16,9 +17,9 @@ export default function HomePage() {
 
   return (
     <div>
-      <div className="bg-tertiary min-h-screen flex items-center justify-center">
+      <div className="bg-tertiary min-h-screen flex flex-col items-center justify-center w-full">
         <Careguide />
-
+        <CustomerReview />
 
         {/* shop detail ไปทำต่อนะครับ ผมขอให้เก็บ id shop-detail ไว้ เอาไว้เชื่อมกับ Footer */}
         <section id="shop-detail" className="min-h-screen p-10">
