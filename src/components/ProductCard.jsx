@@ -32,7 +32,7 @@ function ProductCard({ product, showQuantity = true }) {
   }, [addToCart, product]);
 
   return (
-    <div className="product-card will-change-transform [contain:content] border border-gray-100 rounded-2xl p-3 bg-white shadow-sm">
+    <div className="product-card will-change-transform contain-content border border-gray-100 rounded-2xl p-3 bg-white shadow-sm">
       <div>
         <div className="relative mb-3 rounded-xl overflow-hidden">
           <img
