@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 import Careguide from "./_components/Careguide";
 
 export default function HomePage() {
-
   // เอาไว้ใช้สำหรับ Footer กดที่ contact ให้วิ่งไปที่ shop-detail ที่หน้า homePage
   const location = useLocation();
   useEffect(() => {
@@ -20,6 +19,10 @@ export default function HomePage() {
         <Careguide />
 
 
+        {/* customDesign  เดี๋ยวถ้าพี่ปอมทำเเล้วผมค่อยเปลี่ยนครับ*/}
+        <section id="customDesign" className="min-h-screen p-10">
+          <h2 className="text-2xl font-bold">Custom Design</h2>
+        </section>
         {/* shop detail ไปทำต่อนะครับ ผมขอให้เก็บ id shop-detail ไว้ เอาไว้เชื่อมกับ Footer */}
         <section id="shop-detail" className="min-h-screen p-10">
         
