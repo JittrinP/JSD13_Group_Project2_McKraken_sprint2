@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import mockUser from "../../../assets/mockData/mockUser"; // อ้างอิงไฟล์ mock ข้อมูลผู้ใช้งาน
+import mockUser from "../../../assets/mockData/mockUser";
 
 export default function CustomerAddress({ currentUser = mockUser[0] }) {
   // ==========================================
   // 1. STATE MANAGEMENT
   // ==========================================
 
-  // แปลงข้อมูลที่ได้จาก mockUser (หรือ API) ให้อยู่ในรูปแบบ State สำหรับใช้ใน Component
+  // state ข้อมูลที่อยู่ทั้งหมด
   const [addresses, setAddresses] = useState(() => {
     const initial = (currentUser?.shipping_addresses || []).map((addr, index) => ({
       id: addr.id || `addr-init-${index}`,
@@ -20,18 +20,21 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
       isDefault: addr.is_default || index === 0,
     }));
 
-    // บังคับเงื่อนไข: หากไม่มีที่อยู่ไหนถูกตั้งเป็น Default ให้ตั้งรายการแรกเป็น Default ทันที
     if (initial.length > 0 && !initial.some((a) => a.isDefault)) {
       initial[0].isDefault = true;
     }
     return initial;
   });
 
-  // State ควบคุมการเปิด/ปิด Pop-up Modal และเก็บ ID ของที่อยู่ที่กำลังแก้ไข (null = เพิ่มใหม่)
+  // State ควบคุม Modal สำหรับ เพิ่ม/แก้ไข ที่อยู่
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
 
-  // State สำหรับเก็บข้อมูล Input ในฟอร์ม Modal
+  // State ควบคุม Custom Delete Modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingTarget, setDeletingTarget] = useState(null); // เก็บข้อมูลที่อยู่ที่กำลังจะถูกลบ
+
+  // State เก็บข้อมูลในฟอร์ม Add/Edit
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -43,10 +46,9 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
   });
 
   // ==========================================
-  // 2. MODAL CONTROLLERS (เปิด / ปิด)
+  // 2. MODAL CONTROLLERS (เพิ่ม/แก้ไข ที่อยู่)
   // ==========================================
 
-  // เปิด Modal สำหรับ "เพิ่มที่อยู่ใหม่" (ล้างฟอร์ม + ใส่ค่าเริ่มต้นชื่อ/เบอร์โทรจาก User)
   const handleOpenAddModal = () => {
     setEditingAddressId(null);
     setFormData({
@@ -61,7 +63,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
     setIsModalOpen(true);
   };
 
-  // เปิด Modal สำหรับ "แก้ไขที่อยู่" (นำข้อมูลที่อยู่ที่เลือกมาใส่ลงในฟอร์ม)
   const handleOpenEditModal = (targetAddr) => {
     setEditingAddressId(targetAddr.id);
     setFormData({
@@ -76,28 +77,51 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
     setIsModalOpen(true);
   };
 
-  // ปิด Modal และ รีเซ็ต ID ที่แก้ไข
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingAddressId(null);
   };
 
   // ==========================================
-  // 3. ADDRESS ACTIONS (เพิ่ม / แก้ไข / ลบ / ตั้งหลัก)
+  // 3. DELETE MODAL HANDLERS
   // ==========================================
 
-  // บันทึกที่อยู่ (รองรับทั้งเพิ่มใหม่และการแก้ไข)
+  // เปิด Custom Modal เตือนการลบที่อยู่
+  const handleOpenDeleteModal = (targetAddr) => {
+    if (targetAddr?.isDefault) {
+      alert("ไม่สามารถลบที่อยู่หลักได้");
+      return;
+    }
+    setDeletingTarget(targetAddr);
+    setDeleteModalOpen(true);
+  };
+
+  // ปิด Custom Delete Modal
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setDeletingTarget(null);
+  };
+
+  // กดยืนยันการลบที่อยู่จริง จากปุ่มใน Pop-up
+  const handleConfirmDelete = () => {
+    if (deletingTarget) {
+      setAddresses((prev) => prev.filter((item) => item.id !== deletingTarget.id));
+    }
+    handleCloseDeleteModal();
+  };
+
+  // ==========================================
+  // 4. ADDRESS ACTIONS (บันทึก / ตั้งที่อยู่หลัก)
+  // ==========================================
+
   const handleSaveAddress = (e) => {
     e.preventDefault();
-
-    // Validation ตรวจสอบข้อมูลเบื้องต้น
     if (!formData.name || !formData.phone || !formData.addressLine) {
       alert("กรุณากรอกข้อมูล ชื่อ-นามสกุล, เบอร์โทรศัพท์ และที่อยู่ให้ครบถ้วน");
       return;
     }
 
     if (editingAddressId) {
-      // --- กรณีแก้ไขที่อยู่เดิม ---
       setAddresses((prev) => {
         const target = prev.find((item) => item.id === editingAddressId);
         if (!target) return prev;
@@ -105,7 +129,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
         const updatedTarget = { ...target, ...formData };
         const others = prev.filter((item) => item.id !== editingAddressId);
 
-        // จัดลำดับ: หากเป็น Default ให้อยู่บนสุดเสมอ หากไม่ใช่ ให้ย้ายมาอยู่บนสุดรองลงมาจาก Default
         if (updatedTarget.isDefault) {
           return [updatedTarget, ...others];
         } else {
@@ -117,18 +140,16 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
         }
       });
     } else {
-      // --- กรณีเพิ่มที่อยู่ใหม่ ---
       const newAddress = {
         id: `addr-${Date.now()}`,
         ...formData,
-        isDefault: addresses.length === 0, // หากยังไม่มีที่อยู่เลย ให้ที่อยู่นี้เป็น Default ทันที
+        isDefault: addresses.length === 0,
       };
 
       setAddresses((prev) => {
         if (newAddress.isDefault) {
           return [newAddress, ...prev];
         }
-        // วางรายการใหม่ไว้บนสุด (ต่อจากที่อยู่หลัก Default)
         const defaultItem = prev.find((item) => item.isDefault);
         const nonDefaults = prev.filter((item) => !item.isDefault);
         return defaultItem
@@ -137,42 +158,27 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
       });
     }
 
-    handleCloseModal(); // บันทึกเสร็จแล้วปิด Modal
+    handleCloseModal();
   };
 
-  // เปลี่ยนรายการที่เลือกให้เป็น "ที่อยู่หลัก" (Make Default)
   const handleMakeDefault = (id) => {
     setAddresses((prev) => {
       const updated = prev.map((item) => ({
         ...item,
-        isDefault: item.id === id, // เปลี่ยนรายการที่เลือกเป็น true และรายการอื่นเป็น false
+        isDefault: item.id === id,
       }));
-
-      // ย้ายรายการที่เป็น Default ใหม่ขึ้นมาอยู่ลำดับแรกสุด
       const defaultItem = updated.find((item) => item.isDefault);
       const others = updated.filter((item) => !item.isDefault);
       return defaultItem ? [defaultItem, ...others] : updated;
     });
   };
 
-  // ลบที่อยู่ (มีเงื่อนไขป้องกันการลบที่อยู่หลัก)
-  const handleRemove = (id) => {
-    const target = addresses.find((item) => item.id === id);
-    if (target?.isDefault) {
-      alert("ไม่สามารถลบที่อยู่หลักได้");
-      return;
-    }
-    if (confirm("คุณต้องการลบที่อยู่นี้ใช่หรือไม่?")) {
-      setAddresses((prev) => prev.filter((item) => item.id !== id));
-    }
-  };
-
   // ==========================================
-  // 4. RENDER UI
+  // 5. RENDER UI
   // ==========================================
   return (
     <div className="w-full bg-secondary rounded-2xl p-6 md:p-10 shadow-sm border border-black/5">
-      {/* --- ส่วนหัว Component: ชื่อหน้าและปุ่มเพิ่มที่อยู่ --- */}
+      {/* ส่วนหัว Component */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <h2 className="font-display text-2xl md:text-3xl font-bold text-neutral">
           My Address
@@ -185,7 +191,7 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
         </button>
       </div>
 
-      {/* --- รายการที่อยู่ ( scrollable เลื่อนดูได้ภายในกรอบ ) --- */}
+      {/* รายการที่อยู่ */}
       <div className="max-h-130 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
         {addresses.length === 0 ? (
           <div className="text-center py-12 text-neutral/60 font-body">
@@ -200,7 +206,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
               }`}
             >
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                {/* ข้อมูลชื่อ เบอร์โทร และที่อยู่ลูกค้า */}
                 <div className="space-y-1.5 flex-1 font-body">
                   <div className="text-base font-bold text-neutral">
                     <span>{item.name}</span>
@@ -217,22 +222,20 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
                   </p>
                 </div>
 
-                {/* ปุ่มจัดการ: Edit, Remove, Default Status */}
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <div className="flex items-center space-x-2 text-xs font-body">
-                    {/* ปุ่มแก้ไข (แสดงทุกรายการ) */}
                     <button
                       onClick={() => handleOpenEditModal(item)}
                       className="text-neutral/70 hover:text-neutral transition-colors cursor-pointer"
                     >
                       Edit
                     </button>
-                    {/* ปุ่มลบ (ซ่อนไว้สำหรับรายการที่เป็น Default) */}
                     {!item.isDefault && (
                       <>
                         <span className="text-neutral/30">|</span>
+                        {/* ⭐️ เรียกใช้ Custom Delete Modal แทน confirm() ของ Browser */}
                         <button
-                          onClick={() => handleRemove(item.id)}
+                          onClick={() => handleOpenDeleteModal(item)}
                           className="text-red-700/80 hover:text-red-700 transition-colors cursor-pointer"
                         >
                           Remove
@@ -241,7 +244,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
                     )}
                   </div>
 
-                  {/* แสดง Badge "Default" หรือ ปุ่มกด "Make default" */}
                   {item.isDefault ? (
                     <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-black/10 text-neutral/50 text-xs font-medium font-body cursor-default">
                       <span className="w-1.5 h-1.5 rounded-full bg-neutral/40"></span>
@@ -263,49 +265,36 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
         )}
       </div>
 
-      {/* --- POP-UP MODAL (แสดงเมื่อกด Add หรือ Edit) --- */}
+      {/* ==========================================
+          POP-UP 1: MODAL สำหรับ ADD / EDIT ADDRESS
+         ========================================== */}
       {isModalOpen && (
         <div
-          onClick={handleCloseModal} // คลิกพื้นหลังเบลอเพื่อปิด Modal
+          onClick={handleCloseModal}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 cursor-pointer"
         >
           <div
-            onClick={(e) => e.stopPropagation()} // ป้องกันไม่ให้การคลิกข้างในตัว Modal ส่ง Event ไปปิด Backdrop
+            onClick={(e) => e.stopPropagation()}
             className="relative bg-secondary w-full max-w-lg rounded-2xl p-6 sm:p-8 shadow-xl border border-black/10 animate-in fade-in zoom-in duration-150 cursor-default"
           >
-            {/* ปุ่ม ✕ ปิด Modal มุมขวาบน */}
             <button
               type="button"
               onClick={handleCloseModal}
               className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full text-neutral/60 hover:text-neutral hover:bg-black/5 transition-colors cursor-pointer"
               aria-label="Close modal"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
-            {/* หัวข้อ Modal */}
             <h3 className="font-display text-xl font-bold text-neutral mb-6">
               {editingAddressId ? "Edit Address" : "Add New Address"}
             </h3>
 
-            {/* ฟอร์มกรอกข้อมูลที่อยู่ */}
             <form onSubmit={handleSaveAddress} className="space-y-4 font-body">
               <div>
-                <label className="block text-xs font-semibold text-neutral/80 mb-1">
-                  Full Name
-                </label>
+                <label className="block text-xs font-semibold text-neutral/80 mb-1">Full Name</label>
                 <input
                   type="text"
                   required
@@ -317,9 +306,7 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral/80 mb-1">
-                  Phone Number
-                </label>
+                <label className="block text-xs font-semibold text-neutral/80 mb-1">Phone Number</label>
                 <input
                   type="text"
                   required
@@ -331,24 +318,20 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral/80 mb-1">
-                  Address Detail
-                </label>
+                <label className="block text-xs font-semibold text-neutral/80 mb-1">Address Detail</label>
                 <textarea
                   required
                   rows="2"
                   value={formData.addressLine}
                   onChange={(e) => setFormData({ ...formData, addressLine: e.target.value })}
-                  placeholder="e.g. 128/45 Moo 3, Soi Ramkhamhaeng 24, Ramkhamhaeng Road"
+                  placeholder="e.g. 128/45 Moo 3, Soi Ramkhamhaeng 24"
                   className="w-full px-3 py-2 bg-white rounded-lg border border-black/10 focus:outline-none focus:ring-1 focus:ring-primary text-sm text-neutral resize-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral/80 mb-1">
-                    Sub-district / Tambon
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral/80 mb-1">Sub-district / Tambon</label>
                   <input
                     type="text"
                     value={formData.subDistrict}
@@ -358,9 +341,7 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral/80 mb-1">
-                    District / Amphoe
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral/80 mb-1">District / Amphoe</label>
                   <input
                     type="text"
                     value={formData.district}
@@ -373,9 +354,7 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral/80 mb-1">
-                    Province
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral/80 mb-1">Province</label>
                   <input
                     type="text"
                     value={formData.province}
@@ -385,9 +364,7 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral/80 mb-1">
-                    Postal Code
-                  </label>
+                  <label className="block text-xs font-semibold text-neutral/80 mb-1">Postal Code</label>
                   <input
                     type="text"
                     value={formData.postalCode}
@@ -398,7 +375,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
                 </div>
               </div>
 
-              {/* ปุ่มยกเลิก และ ยืนยันในฟอร์ม */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-black/5 mt-6">
                 <button
                   type="button"
@@ -415,6 +391,65 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          POP-UP 2: CUSTOM DELETE CONFIRMATION MODAL
+         ========================================== */}
+      {deleteModalOpen && (
+        <div
+          onClick={handleCloseDeleteModal} // คลิกพื้นหลังเบลอเพื่อปิด Pop-up
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 cursor-pointer animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()} // ป้องกันการคลิกข้างในตัว Pop-up ทะลุไปปิด
+            className="relative bg-secondary w-full max-w-sm rounded-2xl p-6 shadow-xl border border-black/10 text-center font-body cursor-default animate-in zoom-in-95 duration-150"
+          >
+            {/* ปุ่ม ✕ มุมขวาบน */}
+            <button
+              type="button"
+              onClick={handleCloseDeleteModal}
+              className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full text-neutral/50 hover:text-neutral hover:bg-black/5 transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* ไอคอนแจ้งเตือนสีส้มอ่อน/แดง */}
+            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+
+            {/* ข้อความยืนยัน */}
+            <h3 className="font-display text-lg font-bold text-neutral mb-2">
+              Confirm Delete
+            </h3>
+            <p className="text-xs text-neutral/70 mb-6 leading-relaxed">
+              คุณต้องการลบที่อยู่นี้ใช่หรือไม่? เมื่อลบแล้วจะไม่สามารถกู้คืนข้อมูลกลับมาได้
+            </p>
+
+            {/* ปุ่ม Cancel และ Delete */}
+            <div className="flex justify-center space-x-3">
+              <button
+                type="button"
+                onClick={handleCloseDeleteModal}
+                className="w-1/2 py-2.5 rounded-full border border-black/20 text-neutral text-xs font-medium hover:bg-black/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="w-1/2 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-medium shadow-xs transition-colors cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
