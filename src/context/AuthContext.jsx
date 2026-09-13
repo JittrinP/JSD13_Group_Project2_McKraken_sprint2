@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import mockUser from "../assets/mockData/mockUser";
 
 // วิธีใช้ในหน้าอื่นๆ:
 // import { useAuth } from "../context/AuthContext";
-// const { user, isLoggedIn, login, logout } = useAuth();
+// const { user, isLoggedIn, users, login, logout, register } = useAuth();
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = "auth_user";
@@ -16,6 +17,10 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
+
+  // "users" คือรายชื่อ account ทั้งหมดที่ระบบรู้จัก (mock ไว้ก่อน + คนที่สมัครใหม่ระหว่าง session นี้)
+  // ตั้งใจไม่ persist ลง localStorage (B-lite) — refresh แล้ว user ที่เพิ่งสมัครจะหายไป รอวันต่อ MongoDB backend จริงค่อยเปลี่ยนเป็น fetch แทน — Albert
+  const [users, setUsers] = useState(mockUser);
 
   useEffect(() => {
     if (user) {
@@ -33,8 +38,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  function register(newUser) {
+    setUsers((prev) => [...prev, newUser]);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoggedIn: !!user, users, login, logout, register }}
+    >
       {children}
     </AuthContext.Provider>
   );

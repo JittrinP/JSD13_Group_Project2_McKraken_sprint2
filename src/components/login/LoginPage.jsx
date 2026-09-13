@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Flower2, X } from "lucide-react";
-import mockUser from "../../assets/mockData/mockUser";
 import { useAuth } from "../../context/AuthContext";
 
-export default function LoginPage({ isOpen, onClose }) {
-  const { login } = useAuth();
+export default function LoginPage({ isOpen, onClose, onSwitchToRegister }) {
+  const { users, login } = useAuth(); // เช็คจาก users ใน Context แทน mockUser ตรงๆ เพื่อให้เจอ account ที่เพิ่งสมัครระหว่าง session นี้ด้วย — Albert
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +13,7 @@ export default function LoginPage({ isOpen, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const user = mockUser.find((u) => u.email === email);
+    const user = users.find((u) => u.email === email);
 
     if (!user || user.password_hash !== password) {
       setError("Invalid email or password.");
@@ -37,7 +36,7 @@ export default function LoginPage({ isOpen, onClose }) {
     <div
       role="presentation"
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
     >
       <div
         role="dialog"
@@ -118,7 +117,11 @@ export default function LoginPage({ isOpen, onClose }) {
 
           <div className="flex h-[25px] items-center justify-center gap-5">
             <p className="font-body text-base text-primary">Don't have an account ?</p>
-            <button type="button" className="font-body text-base text-primary underline">
+            <button
+              type="button"
+              onClick={onSwitchToRegister}
+              className="font-body text-base text-primary underline"
+            >
               Register
             </button>
           </div>
