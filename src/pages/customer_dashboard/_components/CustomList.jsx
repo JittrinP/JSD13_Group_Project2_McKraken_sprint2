@@ -20,34 +20,41 @@ export default function CustomList() {
   };
   return (
     <>
-      <div>
+      <div className="flex-1 text-primary">
         {/* หัวข้อ */}
-        <h2 className="font-display text-2xl font-bold ">Bouquet</h2>
+        <h2 className="font-display text-3xl font-bold mb-4">
+          Bouquet
+        </h2>
         {/* หัวตาราง */}
-        <div className="bg-background border-2 rounded-2xl m-4 max-h-[500px] overflow-auto">
-          <div className="grid grid-cols-9 font-body border-b-2">
-            <div className="col-span-4 pl-2">Product</div>
-            <div className="col-span-3 ">Detail</div>
-            <div className="col-span-1 ">Edit</div>
-            <div className="col-span-1 ">Delete</div>
+        <div className="bg-background border border-neutral/10 rounded-2xl shadow-sm max-h-[800px] overflow-auto">
+          <div className="grid grid-cols-9 font-body text-sm text-neutral/60 px-6 py-4 border-b border-neutral/10">
+            <div className="col-span-4">Product</div>
+            <div className="col-span-3">Detail</div>
+            <div className="col-span-1 text-center">Edit</div>
+            <div className="col-span-1 text-center">Delete</div>
           </div>
           {/* customList */}
           {customList.map((design) => (
             <div
               key={design._id}
-              className="grid grid-cols-9 border-b-2 p-2 last:border-b-0"
+              className="grid grid-cols-9 items-center border-b border-neutral/10 px-6 py-5 last:border-b-0"
             >
               {/* Products: รูป + ชื่อ design */}
               <div className="col-span-4">
-                <div className=" flex flex-row gap-2">
-                  <img src="https://placehold.co/62x62" />
-                  <span>{design.design_name}</span>
+                <div className="flex flex-row items-center gap-3">
+                  <img
+                    src="https://placehold.co/62x62"
+                    className="w-[62px] h-[62px] rounded-lg object-cover shrink-0"
+                  />
+                  <span className="font-display text-lg font-semibold text-neutral">
+                    {design.design_name}
+                  </span>
                 </div>
               </div>
 
               <div className="col-span-3">
                 {/* Detail ใส่บูลเล็ทโดยใส่ class ไปเพราะว่า tailwind มันลบออกหมดเลย */}
-                <ul className="list-disc list-inside">
+                <ul className="list-disc list-inside font-body text-sm text-neutral/70 space-y-0.5">
                   {design.components.map((item) => {
                     const inv = findInv(item.inventory_item_id);
                     return (
@@ -59,20 +66,18 @@ export default function CustomList() {
                 </ul>
               </div>
 
-              <div className="col-span-1">
-                
-                  <button
-                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-background border border-neutral/30 text-neutral hover:bg-secondary transition-colors md:bg-transparent md:border-none hover:cursor-pointer"
-                    onClick={() => {
-                      editHandler(design._id);
-                    }}
-                  >
-                    <SquarePen className="w-4 h-4" />
-                  </button>
-           
+              <div className="col-span-1 flex justify-center">
+                <button
+                  className="w-9 h-9 rounded-xl flex items-center justify-center bg-white border border-neutral/20 text-neutral hover:bg-secondary transition-colors hover:cursor-pointer"
+                  onClick={() => {
+                    editHandler(design._id);
+                  }}
+                >
+                  <SquarePen className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="col-span-1">
+              <div className="col-span-1 flex justify-center">
                 <button
                   className="w-9 h-9 rounded-xl flex items-center justify-center bg-destructive text-white hover:opacity-90 transition-opacity hover:cursor-pointer"
                   onClick={() => {
