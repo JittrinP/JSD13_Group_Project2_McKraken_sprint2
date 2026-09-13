@@ -1,12 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { mockCustomerReviews } from "../../../assets/mockData/mockCMR"; 
 
-// ฟังก์ชันสำหรับวาดดาว Star Rating (รองรับทั้งดาวเต็ม และ ดาวครึ่ง)
+// ฟังก์ชันสำหรับสุ่มเลือก N ชิ้นแบบไม่ซ้ำกัน (Fisher-Yates Shuffle)
+const getRandomReviews = (reviews, count = 3) => {
+  const shuffled = [...reviews];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, count);
+};
+
+// ฟังก์ชันสำหรับวาดดาว Star Rating (รองรับทั้งดาวเต็ม ดาวครึ่ง และดาวว่าง)
 const StarRating = ({ rating }) => {
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     if (rating >= i) {
-      // ดาวเต็ม
       stars.push(
         <svg
           key={i}
@@ -18,7 +27,6 @@ const StarRating = ({ rating }) => {
         </svg>
       );
     } else if (rating >= i - 0.5) {
-      // ดาวครึ่ง
       stars.push(
         <svg
           key={i}
@@ -39,7 +47,6 @@ const StarRating = ({ rating }) => {
         </svg>
       );
     } else {
-      // ดาวว่าง
       stars.push(
         <svg
           key={i}
@@ -56,22 +63,22 @@ const StarRating = ({ rating }) => {
 };
 
 export default function CustomerReview() {
-  // กรองข้อมูล: คัดลอก Array กรองคะแนนจากมากไปน้อย และดึงมาแค่ 3 อันดับแรก
-  const topReviews = [...mockCustomerReviews]
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, 3);
+  const [randomReviews, setRandomReviews] = useState([]);
+
+  // สุ่มเลือก 3 รีวิวใหม่ทุกครั้งที่โหลดหน้า หรือ Component Re-render
+  useEffect(() => {
+    setRandomReviews(getRandomReviews(mockCustomerReviews, 3));
+  }, []);
 
   return (
     <section className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-tertiary">
       <div className="max-w-7xl mx-auto">
-        {/* หัวข้อ Section อ้างอิงจาก Typography & Design */}
         <h2 className="font-display text-3xl md:text-4xl text-center text-primary font-bold mb-12 tracking-wide">
           Notes from our Friends
         </h2>
 
-        {/* ตารางแสดงการ์ดคำรีวิวของลูกค้า */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {topReviews.map((review) => (
+          {randomReviews.map((review) => (
             <div
               key={review.id}
               className="bg-secondary rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-sm transition-all duration-300 hover:shadow-md"
@@ -82,15 +89,14 @@ export default function CustomerReview() {
                   <StarRating rating={review.rating} />
                 </div>
 
-                {/* 2. ข้อความรีวิว (Font: Plus Jakarta Sans / Italic) */}
+                {/* 2. ข้อความรีวิว */}
                 <p className="font-body italic text-neutral text-base leading-relaxed mb-6">
                   "{review.comment}"
                 </p>
               </div>
 
-              {/* 3. ส่วนข้อมูลลูกค้าและสินค้า */}
+              {/* 3. ข้อมูลลูกค้า */}
               <div className="flex items-center space-x-3 pt-4 border-t border-black/5 mt-auto">
-                {/* รูป Profile Avatar พร้อม Fallback */}
                 {review.avatar ? (
                   <img
                     src={review.avatar}
