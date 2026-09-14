@@ -4,7 +4,10 @@ import mockShopBlog from "../assets/mockData/mockShopBlog";
 
 const PAGE_SIZE = 6;
 
-export default function PopShopBlog({ formatBlogDate, formatCategory }) {
+export default function PopShopBlog({ 
+  formatBlogDate = (date) => date || "", 
+  formatCategory = (category) => category || "" 
+}) {
   const publishedBlogs = [...mockShopBlog]
     .filter((blog) => blog.status === "published")
     .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));

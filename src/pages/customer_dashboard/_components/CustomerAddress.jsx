@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import mockUser from "../../../assets/mockData/mockUser";
+import { useAuth } from "../../../context/AuthContext";
 
-export default function CustomerAddress({ currentUser = mockUser[0] }) {
+export default function CustomerAddress() {
+  // ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ในระบบผ่าน AuthContext
+  const { user: currentUser } = useAuth();
+
   // ==========================================
   // 1. STATE MANAGEMENT
   // ==========================================
 
-  // state ข้อมูลที่อยู่ทั้งหมด
+  // state ข้อมูลที่อยู่ทั้งหมด (ดึงจาก currentUser แทน mockData เริ่มต้น)
   const [addresses, setAddresses] = useState(() => {
     const initial = (currentUser?.shipping_addresses || []).map((addr, index) => ({
       id: addr.id || `addr-init-${index}`,
@@ -32,7 +35,7 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
 
   // State ควบคุม Custom Delete Modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deletingTarget, setDeletingTarget] = useState(null); // เก็บข้อมูลที่อยู่ที่กำลังจะถูกลบ
+  const [deletingTarget, setDeletingTarget] = useState(null);
 
   // State เก็บข้อมูลในฟอร์ม Add/Edit
   const [formData, setFormData] = useState({
@@ -86,7 +89,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
   // 3. DELETE MODAL HANDLERS
   // ==========================================
 
-  // เปิด Custom Modal เตือนการลบที่อยู่
   const handleOpenDeleteModal = (targetAddr) => {
     if (targetAddr?.isDefault) {
       alert("ไม่สามารถลบที่อยู่หลักได้");
@@ -96,13 +98,11 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
     setDeleteModalOpen(true);
   };
 
-  // ปิด Custom Delete Modal
   const handleCloseDeleteModal = () => {
     setDeleteModalOpen(false);
     setDeletingTarget(null);
   };
 
-  // กดยืนยันการลบที่อยู่จริง จากปุ่มใน Pop-up
   const handleConfirmDelete = () => {
     if (deletingTarget) {
       setAddresses((prev) => prev.filter((item) => item.id !== deletingTarget.id));
@@ -157,7 +157,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
           : [newAddress, ...nonDefaults];
       });
     }
-
     handleCloseModal();
   };
 
@@ -178,7 +177,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
   // ==========================================
   return (
     <div className="w-full bg-secondary rounded-2xl p-6 md:p-10 shadow-sm border border-black/5">
-      {/* ส่วนหัว Component */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <h2 className="font-display text-2xl md:text-3xl font-bold text-neutral">
           My Address
@@ -191,8 +189,8 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
         </button>
       </div>
 
-      {/* รายการที่อยู่ */}
-      <div className="max-h-130 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
+      {/* แก้ไขส่วนนี้: ซ่อน Scrollbar ด้วยการแทรก class ของ Tailwind เข้าไป */}
+      <div className="max-h-130 overflow-y-auto pr-2 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none">
         {addresses.length === 0 ? (
           <div className="text-center py-12 text-neutral/60 font-body">
             ยังไม่มีข้อมูลที่อยู่ กรุณากดเพิ่มที่อยู่ใหม่
@@ -233,7 +231,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
                     {!item.isDefault && (
                       <>
                         <span className="text-neutral/30">|</span>
-                        {/* ⭐️ เรียกใช้ Custom Delete Modal แทน confirm() ของ Browser */}
                         <button
                           onClick={() => handleOpenDeleteModal(item)}
                           className="text-red-700/80 hover:text-red-700 transition-colors cursor-pointer"
@@ -400,14 +397,13 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
          ========================================== */}
       {deleteModalOpen && (
         <div
-          onClick={handleCloseDeleteModal} // คลิกพื้นหลังเบลอเพื่อปิด Pop-up
+          onClick={handleCloseDeleteModal}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 cursor-pointer animate-in fade-in duration-150"
         >
           <div
-            onClick={(e) => e.stopPropagation()} // ป้องกันการคลิกข้างในตัว Pop-up ทะลุไปปิด
+            onClick={(e) => e.stopPropagation()}
             className="relative bg-secondary w-full max-w-sm rounded-2xl p-6 shadow-xl border border-black/10 text-center font-body cursor-default animate-in zoom-in-95 duration-150"
           >
-            {/* ปุ่ม ✕ มุมขวาบน */}
             <button
               type="button"
               onClick={handleCloseDeleteModal}
@@ -418,14 +414,12 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
               </svg>
             </button>
 
-            {/* ไอคอนแจ้งเตือนสีส้มอ่อน/แดง */}
             <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </div>
 
-            {/* ข้อความยืนยัน */}
             <h3 className="font-display text-lg font-bold text-neutral mb-2">
               Confirm Delete
             </h3>
@@ -433,7 +427,6 @@ export default function CustomerAddress({ currentUser = mockUser[0] }) {
               คุณต้องการลบที่อยู่นี้ใช่หรือไม่? เมื่อลบแล้วจะไม่สามารถกู้คืนข้อมูลกลับมาได้
             </p>
 
-            {/* ปุ่ม Cancel และ Delete */}
             <div className="flex justify-center space-x-3">
               <button
                 type="button"
