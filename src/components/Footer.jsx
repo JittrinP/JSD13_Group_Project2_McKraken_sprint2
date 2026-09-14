@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <>
       <div>
-        <footer className="w-full h-fit footer footer-center text-base-content rounded bg-background text-neutral">
+        <footer className="w-full h-fit footer footer-center rounded bg-background text-neutral">
           {/* Display desktop */}
 
           <div className="w-full h-fit flex flex-row justify-center font-body md:hidden">

@@ -9,9 +9,13 @@ import {
   ShoppingBag,
   ChevronRight,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext"; // เพิ่มเข้ามาเพื่อเช็คสถานะ login — Albert
+import LoginPage from "./login/LoginPage"; // เพิ่มเข้ามาเพื่อ render popup login — Albert
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false); // เพิ่ม state คุมเปิด/ปิด popup login — Albert
+  const { isLoggedIn } = useAuth(); // เพิ่มเข้ามาเพื่อสลับ UI ตามสถานะ login — Albert
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
@@ -72,12 +76,23 @@ export default function Navbar() {
             </nav>
 
             <div className="flex items-center gap-3 sm:gap-4 ml-8">
-              <Link
-                to="/customerdashboard"
-                className="text-neutral hover:opacity-75"
-              >
-                <User className="w-5 h-5" />
-              </Link>
+              {/* เดิมเป็น Link ไป /customerdashboard เฉยๆ แก้ให้เช็ค login ก่อน ถ้ายังไม่ login ให้เปิด popup แทน — Albert */}
+              {isLoggedIn ? (
+                <Link
+                  to="/customerdashboard"
+                  className="text-neutral hover:opacity-75"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsLoginOpen(true)} // เพิ่มปุ่มเปิด popup login — Albert
+                  className="text-neutral hover:opacity-75"
+                >
+                  <User className="w-5 h-5" />
+                </button>
+              )}
               <Link to="/cart" className="text-neutral hover:opacity-75">
                 <ShoppingBag className="w-5 h-5" />
               </Link>
@@ -171,9 +186,45 @@ export default function Navbar() {
                 </>
               )}
             </NavLink>
+
+            {/* เพิ่มรายการ Account/Login ในเมนูมือถือ เดิมไม่มีทางเข้าถึง login จากมือถือเลย — Albert */}
+            {isLoggedIn ? (
+              <NavLink
+                to="/customerdashboard"
+                onClick={closeMenu}
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
+                    isActive
+                      ? "bg-primary text-white"
+                      : "text-neutral hover:bg-black/5"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span>Account</span>
+                    {isActive && <ChevronRight className="w-4 h-4" />}
+                  </>
+                )}
+              </NavLink>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenu();
+                  setIsLoginOpen(true); // เปิด popup login พร้อมปิดเมนูมือถือ — Albert
+                }}
+                className="flex items-center justify-between px-4 py-3 rounded-xl text-neutral hover:bg-black/5"
+              >
+                <span>Login</span>
+              </button>
+            )}
           </nav>
         </div>
       </aside>
+
+      {/* เพิ่ม popup login เข้ามาใน Navbar เพื่อให้กดจากไอคอน User ได้ทั้งมือถือและเดสก์ท็อป — Albert */}
+      <LoginPage isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </>
   );
 }
