@@ -14,8 +14,7 @@ export default function Careguide() {
     return (
         <section className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-tertiary">
             <div className="max-w-7xl mx-auto flex justify-center">
-                {/* Main Container Card: เปลี่ยน bg-background เป็น bg-secondary และถอด border/shadow ออก */}
-                <div className="bg-secondary rounded-4xl overflow-hidden max-w-5xl w-full grid grid-cols-1 md:grid-cols-2">
+                <div className="bg-secondary rounded-4xl overflow-hidden max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 shadow-sm border border-black/5">
 
                     {/* Left Section: Content */}
                     <div className="p-8 sm:p-10 md:p-12 flex flex-col justify-center">
