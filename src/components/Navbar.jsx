@@ -11,10 +11,12 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext"; // เพิ่มเข้ามาเพื่อเช็คสถานะ login — Albert
 import LoginPage from "./login/LoginPage"; // เพิ่มเข้ามาเพื่อ render popup login — Albert
+import RegisterPage from "./login/RegisterPage"; // เพิ่มเข้ามาเพื่อ render popup register — Albert
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false); // เพิ่ม state คุมเปิด/ปิด popup login — Albert
+  // เก็บเป็นค่าเดียว (null | "login" | "register") แทน boolean 2 ตัว เพื่อสลับไปมาระหว่าง popup ได้ — Albert
+  const [authModal, setAuthModal] = useState(null);
   const { isLoggedIn } = useAuth(); // เพิ่มเข้ามาเพื่อสลับ UI ตามสถานะ login — Albert
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -87,7 +89,7 @@ export default function Navbar() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setIsLoginOpen(true)} // เพิ่มปุ่มเปิด popup login — Albert
+                  onClick={() => setAuthModal("login")} // เพิ่มปุ่มเปิด popup login — Albert
                   className="text-neutral hover:opacity-75"
                 >
                   <User className="w-5 h-5" />
@@ -212,7 +214,7 @@ export default function Navbar() {
                 type="button"
                 onClick={() => {
                   closeMenu();
-                  setIsLoginOpen(true); // เปิด popup login พร้อมปิดเมนูมือถือ — Albert
+                  setAuthModal("login"); // เปิด popup login พร้อมปิดเมนูมือถือ — Albert
                 }}
                 className="flex items-center justify-between px-4 py-3 rounded-xl text-neutral hover:bg-black/5"
               >
@@ -223,8 +225,18 @@ export default function Navbar() {
         </div>
       </aside>
 
-      {/* เพิ่ม popup login เข้ามาใน Navbar เพื่อให้กดจากไอคอน User ได้ทั้งมือถือและเดสก์ท็อป — Albert */}
-      <LoginPage isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      {/* เพิ่ม popup login/register เข้ามาใน Navbar เพื่อให้กดจากไอคอน User ได้ทั้งมือถือและเดสก์ท็อป — Albert */}
+      {/* authModal เป็นตัวคุมว่าจะโชว์ popup ไหน สลับไป Register จาก Login ได้ (และย้อนกลับ) — Albert */}
+      <LoginPage
+        isOpen={authModal === "login"}
+        onClose={() => setAuthModal(null)}
+        onSwitchToRegister={() => setAuthModal("register")}
+      />
+      <RegisterPage
+        isOpen={authModal === "register"}
+        onClose={() => setAuthModal(null)}
+        onSwitchToLogin={() => setAuthModal("login")}
+      />
     </>
   );
 }
