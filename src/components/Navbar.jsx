@@ -12,11 +12,14 @@ import {
 import { useAuth } from "../context/AuthContext"; // เพิ่มเข้ามาเพื่อเช็คสถานะ login — Albert
 import LoginPage from "./login/LoginPage"; // เพิ่มเข้ามาเพื่อ render popup login — Albert
 import RegisterPage from "./login/RegisterPage"; // เพิ่มเข้ามาเพื่อ render popup register — Albert
+import ForgetPassword from "./login/ForgetPassword"; // เพิ่มเข้ามาเพื่อ render popup ลืมรหัสผ่าน — Albert
+import RenewPassword from "./login/RenewPassword"; // เพิ่มเข้ามาเพื่อ render popup ตั้งรหัสผ่านใหม่ — Albert
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  // เก็บเป็นค่าเดียว (null | "login" | "register") แทน boolean 2 ตัว เพื่อสลับไปมาระหว่าง popup ได้ — Albert
+  // เก็บเป็นค่าเดียว (null | "login" | "register" | "forgot" | "renew") แทน boolean หลายตัว เพื่อสลับไปมาระหว่าง popup ได้ — Albert
   const [authModal, setAuthModal] = useState(null);
+  const [resetEmail, setResetEmail] = useState(""); // เก็บ email ระหว่างขั้นตอน ForgetPassword -> RenewPassword — Albert
   const { isLoggedIn } = useAuth(); // เพิ่มเข้ามาเพื่อสลับ UI ตามสถานะ login — Albert
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -231,10 +234,25 @@ export default function Navbar() {
         isOpen={authModal === "login"}
         onClose={() => setAuthModal(null)}
         onSwitchToRegister={() => setAuthModal("register")}
+        onForgotPassword={() => setAuthModal("forgot")}
       />
       <RegisterPage
         isOpen={authModal === "register"}
         onClose={() => setAuthModal(null)}
+        onSwitchToLogin={() => setAuthModal("login")}
+      />
+      <ForgetPassword
+        isOpen={authModal === "forgot"}
+        onClose={() => setAuthModal(null)}
+        onCodeSent={(email) => {
+          setResetEmail(email);
+          setAuthModal("renew");
+        }}
+      />
+      <RenewPassword
+        isOpen={authModal === "renew"}
+        onClose={() => setAuthModal(null)}
+        email={resetEmail}
         onSwitchToLogin={() => setAuthModal("login")}
       />
     </>

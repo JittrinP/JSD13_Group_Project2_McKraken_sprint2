@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Flower2, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-export default function LoginPage({ isOpen, onClose, onSwitchToRegister }) {
+export default function LoginPage({ isOpen, onClose, onSwitchToRegister, onForgotPassword }) {
   const { users, login } = useAuth(); // เช็คจาก users ใน Context แทน mockUser ตรงๆ เพื่อให้เจอ account ที่เพิ่งสมัครระหว่าง session นี้ด้วย — Albert
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -88,6 +88,7 @@ export default function LoginPage({ isOpen, onClose, onSwitchToRegister }) {
               </label>
               <button
                 type="button"
+                onClick={onForgotPassword}
                 className="border-b border-black font-body text-base text-primary"
               >
                 Forget password?
