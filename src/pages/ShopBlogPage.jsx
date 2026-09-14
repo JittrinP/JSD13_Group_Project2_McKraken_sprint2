@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import PopShopBlog from "../components/PopShopBlog";
 import mockShopBlog from "../assets/mockData/mockShopBlog";
+import { optimizeImage } from "../lib/utils";
 
 // "Oct 12"
 function formatBlogDate(date) {
@@ -22,9 +24,13 @@ function formatCategory(category) {
 
 export default function ShopBlogPage() {
   // เอาเฉพาะบทความที่เผยแพร่แล้ว เรียงจากใหม่ไปเก่า
-  const publishedBlogs = [...mockShopBlog]
-    .filter((shopblog) => shopblog.status === "published")
-    .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+  const publishedBlogs = useMemo(
+    () =>
+      [...mockShopBlog]
+        .filter((shopblog) => shopblog.status === "published")
+        .sort((a, b) => new Date(b.published_at) - new Date(a.published_at)),
+    []
+  );
 
   // hero = ตัวล่าสุด 1 ตัว + ลิสต์ด้านข้าง 3 ตัว
   const [heroBlog, ...sideBlogs] = publishedBlogs.slice(0, 4);
@@ -39,8 +45,9 @@ export default function ShopBlogPage() {
             {heroBlog && (
               <article className="md:w-3/5">
                 <img
-                  src={heroBlog.cover_image}
+                  src={optimizeImage(heroBlog.cover_image, 1200)}
                   alt={heroBlog.title}
+                  fetchPriority="high"
                   className="aspect-7/3 w-full rounded-2xl bg-accent object-cover"
                 />
                 <p className="mt-4 text-xs tracking-wide text-neutral/70">
@@ -74,8 +81,9 @@ export default function ShopBlogPage() {
                       </h2>
                     </div>
                     <img
-                      src={blog.cover_image}
+                      src={optimizeImage(blog.cover_image, 320)}
                       alt={blog.title}
+                      loading="lazy"
                       className="size-28 shrink-0 rounded-xl bg-accent object-cover md:size-40"
                     />
                   </article>

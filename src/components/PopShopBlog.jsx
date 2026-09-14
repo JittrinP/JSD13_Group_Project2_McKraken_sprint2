@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import mockShopBlog from "../assets/mockData/mockShopBlog";
+import { optimizeImage } from "../lib/utils";
 
 const PAGE_SIZE = 6;
 
 export default function PopShopBlog({ formatBlogDate, formatCategory }) {
-  const publishedBlogs = [...mockShopBlog]
-    .filter((blog) => blog.status === "published")
-    .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+  const publishedBlogs = useMemo(
+    () =>
+      [...mockShopBlog]
+        .filter((blog) => blog.status === "published")
+        .sort((a, b) => new Date(b.published_at) - new Date(a.published_at)),
+    []
+  );
 
-  const popBlogs = publishedBlogs.filter((blog) => blog.is_popular).slice(0, 3);
+  const popBlogs = useMemo(
+    () => publishedBlogs.filter((blog) => blog.is_popular).slice(0, 3),
+    [publishedBlogs]
+  );
   const allBlogs = publishedBlogs;
 
   const pageCount = Math.max(1, Math.ceil(allBlogs.length / PAGE_SIZE));
@@ -124,7 +132,7 @@ function BlogCard({ blog, meta }) {
   return (
     <article className="flex flex-col gap-3">
       <img
-        src={blog.cover_image}
+        src={optimizeImage(blog.cover_image, 480)}
         alt={blog.title}
         loading="lazy"
         className="aspect-368/230 w-full rounded-2xl bg-accent object-cover"
@@ -148,7 +156,7 @@ function BlogListItem({ blog, meta }) {
         </h3>
       </div>
       <img
-        src={blog.cover_image}
+        src={optimizeImage(blog.cover_image, 320)}
         alt={blog.title}
         loading="lazy"
         className="size-28 shrink-0 rounded-xl bg-accent object-cover"
