@@ -11,10 +11,15 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext"; // เพิ่มเข้ามาเพื่อเช็คสถานะ login — Albert
 import LoginPage from "./login/LoginPage"; // เพิ่มเข้ามาเพื่อ render popup login — Albert
+import RegisterPage from "./login/RegisterPage"; // เพิ่มเข้ามาเพื่อ render popup register — Albert
+import ForgetPassword from "./login/ForgetPassword"; // เพิ่มเข้ามาเพื่อ render popup ลืมรหัสผ่าน — Albert
+import RenewPassword from "./login/RenewPassword"; // เพิ่มเข้ามาเพื่อ render popup ตั้งรหัสผ่านใหม่ — Albert
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false); // เพิ่ม state คุมเปิด/ปิด popup login — Albert
+  // เก็บเป็นค่าเดียว (null | "login" | "register" | "forgot" | "renew") แทน boolean หลายตัว เพื่อสลับไปมาระหว่าง popup ได้ — Albert
+  const [authModal, setAuthModal] = useState(null);
+  const [resetEmail, setResetEmail] = useState(""); // เก็บ email ระหว่างขั้นตอน ForgetPassword -> RenewPassword — Albert
   const { isLoggedIn } = useAuth(); // เพิ่มเข้ามาเพื่อสลับ UI ตามสถานะ login — Albert
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -87,7 +92,7 @@ export default function Navbar() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setIsLoginOpen(true)} // เพิ่มปุ่มเปิด popup login — Albert
+                  onClick={() => setAuthModal("login")} // เพิ่มปุ่มเปิด popup login — Albert
                   className="text-neutral hover:opacity-75"
                 >
                   <User className="w-5 h-5" />
@@ -212,7 +217,7 @@ export default function Navbar() {
                 type="button"
                 onClick={() => {
                   closeMenu();
-                  setIsLoginOpen(true); // เปิด popup login พร้อมปิดเมนูมือถือ — Albert
+                  setAuthModal("login"); // เปิด popup login พร้อมปิดเมนูมือถือ — Albert
                 }}
                 className="flex items-center justify-between px-4 py-3 rounded-xl text-neutral hover:bg-black/5"
               >
@@ -223,8 +228,33 @@ export default function Navbar() {
         </div>
       </aside>
 
-      {/* เพิ่ม popup login เข้ามาใน Navbar เพื่อให้กดจากไอคอน User ได้ทั้งมือถือและเดสก์ท็อป — Albert */}
-      <LoginPage isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      {/* เพิ่ม popup login/register เข้ามาใน Navbar เพื่อให้กดจากไอคอน User ได้ทั้งมือถือและเดสก์ท็อป — Albert */}
+      {/* authModal เป็นตัวคุมว่าจะโชว์ popup ไหน สลับไป Register จาก Login ได้ (และย้อนกลับ) — Albert */}
+      <LoginPage
+        isOpen={authModal === "login"}
+        onClose={() => setAuthModal(null)}
+        onSwitchToRegister={() => setAuthModal("register")}
+        onForgotPassword={() => setAuthModal("forgot")}
+      />
+      <RegisterPage
+        isOpen={authModal === "register"}
+        onClose={() => setAuthModal(null)}
+        onSwitchToLogin={() => setAuthModal("login")}
+      />
+      <ForgetPassword
+        isOpen={authModal === "forgot"}
+        onClose={() => setAuthModal(null)}
+        onCodeSent={(email) => {
+          setResetEmail(email);
+          setAuthModal("renew");
+        }}
+      />
+      <RenewPassword
+        isOpen={authModal === "renew"}
+        onClose={() => setAuthModal(null)}
+        email={resetEmail}
+        onSwitchToLogin={() => setAuthModal("login")}
+      />
     </>
   );
 }
