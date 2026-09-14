@@ -5,7 +5,7 @@ import "./App.css";
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage/HomePage";
 import ProductsPage from "./pages/Products/ProductsPage";
-//import ShopBlogPage from "./pages/ShopBlogPage";
+import ShopBlogPage from "./pages/ShopBlogPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import CustomerDashboardPage from "./pages/customer_dashboard/CustomerDashboardPage";

@@ -6,7 +6,6 @@ import ShopDetail from "./_components/ShopDetail";
 import PopularProducts from "../../components/PopularProducts";
 
 export default function HomePage() {
-
   // เอาไว้ใช้สำหรับ Footer กดที่ contact ให้วิ่งไปที่ shop-detail ที่หน้า homePage
   const location = useLocation();
   useEffect(() => {
