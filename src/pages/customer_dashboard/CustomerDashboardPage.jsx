@@ -1,4 +1,5 @@
 import CustomList from "../customer_dashboard/_components/CustomList";
+import CustomerAddress from "../customer_dashboard/_components/CustomerAddress"
 export default function CustomerDashboardPage() {
   return (
     <>
@@ -15,6 +16,7 @@ export default function CustomerDashboardPage() {
           {/* รอ AsideCustomer dashboard */}
           {/* <AsideCustomer /> */}
           <CustomList />
+          <CustomerAddress />
         </div>
       </div>
     </>
