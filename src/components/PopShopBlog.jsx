@@ -5,14 +5,13 @@ import { optimizeImage } from "../lib/utils";
 
 const PAGE_SIZE = 6;
 
-export default function PopShopBlog({ formatBlogDate, formatCategory }) {
-  const publishedBlogs = useMemo(
-    () =>
-      [...mockShopBlog]
-        .filter((blog) => blog.status === "published")
-        .sort((a, b) => new Date(b.published_at) - new Date(a.published_at)),
-    []
-  );
+export default function PopShopBlog({ 
+  formatBlogDate = (date) => date || "", 
+  formatCategory = (category) => category || "" 
+}) {
+  const publishedBlogs = [...mockShopBlog]
+    .filter((blog) => blog.status === "published")
+    .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
 
   const popBlogs = useMemo(
     () => publishedBlogs.filter((blog) => blog.is_popular).slice(0, 3),
