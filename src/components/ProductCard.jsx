@@ -33,7 +33,7 @@ export default function ProductCard({ product }) {
   return (
     <div className="product-card group border border-gray-100 rounded-2xl p-3 sm:p-3.5 bg-secondary shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md flex flex-col justify-between w-full max-w-sm sm:max-w-none mx-auto">
       <div>
-        <div className="relative mb-3 rounded-xl overflow-hidden aspect-[4/3] w-full bg-gray-50">
+        <div className="relative mb-3 rounded-xl overflow-hidden aspect-[4/4] w-full bg-gray-50">
           <img
             src={getOptimizedImageUrl(product.images[0])}
             alt={product.name}
@@ -53,16 +53,16 @@ export default function ProductCard({ product }) {
         </p>
       </div>
 
-      <div className="flex items-center justify-between gap-2 pt-3 h-12">
+      <div className="flex items-center justify-end gap-2 pt-3 h-12 ">
         {quantity === 0 ? (
           <button
             onClick={handleAddToCart}
-            className="btn-add-cart w-full h-9 text-xs bg-primary text-white px-3 rounded-full font-medium transition-all duration-200 hover:opacity-95 hover:shadow-sm active:scale-95 cursor-pointer animate-in fade-in zoom-in-95"
+            className="btn-add-cart w-1/2 h-9 text-xs bg-primary text-white px-3 rounded-full font-medium transition-all duration-200 hover:opacity-95 hover:shadow-sm active:scale-95 cursor-pointer animate-in fade-in zoom-in-95"
           >
             Add to cart
           </button>
         ) : (
-          <div className="qty-counter flex items-center justify-between gap-2 w-full h-9 border border-gray-200 rounded-full px-2 text-sm bg-white transition-all duration-200 animate-in fade-in zoom-in-90">
+          <div className="qty-counter flex items-center justify-between gap-2 w-1/2 h-9 border border-gray-200 rounded-full px-2 text-sm bg-white transition-all duration-200 animate-in fade-in zoom-in-90">
             <button
               onClick={handleDecrease}
               className="font-medium px-2.5 py-0.5 rounded-full transition-all duration-150 hover:bg-gray-100 active:scale-75 cursor-pointer text-gray-600 hover:text-gray-900"
