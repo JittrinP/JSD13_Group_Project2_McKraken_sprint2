@@ -1,6 +1,7 @@
-import React from "react";
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import OrderConfirmed from "../components/OrderConfirmed";
 
 import qrcode from "../assets/images/payment-qrcode.svg";
@@ -18,7 +19,15 @@ function formatPrice(value) {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, giftNote, placeOrder } = useCart();
+  const { user, isLoggedIn } = useAuth();
   const [showConfirmed, setShowConfirmed] = useState(false);
+
+  const defaultAddress = user?.shipping_addresses?.find(
+    (address) => address.is_default,
+  );
+  const deliveryAddress = defaultAddress
+    ? `${defaultAddress.address}, ${defaultAddress.sub_district}, ${defaultAddress.district}, ${defaultAddress.province} ${defaultAddress.postal_code}`
+    : null;
 
   const subTotal = items.reduce(
     (sum, item) => sum + item.unit_price * item.quantity,
@@ -29,9 +38,10 @@ export default function CheckoutPage() {
   const grandTotal = subTotal + deliveryFee + serviceFee;
 
   const handlePlaceOrder = () => {
+    if (!isLoggedIn || !deliveryAddress) return;
+
     placeOrder({
-      deliveryAddress:
-        "123 Market Street, Suite 400 San Francisco, CA 94105 United States",
+      deliveryAddress,
       serviceFee,
       deliveryFee,
     });
@@ -146,10 +156,14 @@ export default function CheckoutPage() {
           Delivery Address
         </h1>
         <div className="font-semibold text-neutral/90 text-xl bg-white rounded-2xl px-6 sm:px-8 py-4 shadow-lg shadow-black/4">
-          <p className="mb-2">
-            123 Market Street, Suite 400 San Francisco, CA 94105 United States
-          </p>
-          <p>Phone: +1 (415) 555-0199</p>
+          {isLoggedIn && deliveryAddress ? (
+            <>
+              <p className="mb-2">{deliveryAddress}</p>
+              <p>Phone: {defaultAddress.phone}</p>
+            </>
+          ) : (
+            <p>Please log in to Checkout.</p>
+          )}
         </div>
       </section>
 
@@ -170,7 +184,8 @@ export default function CheckoutPage() {
           <div className="flex flex-col items-center sm:items-end p-4 gap-2 w-full sm:w-auto">
             <button
               onClick={handlePlaceOrder}
-              className="text-xl bg-primary p-2 w-[200px] rounded-full text-[#FFFFFF] shadow-md hover:bg-primary/90"
+              disabled={!isLoggedIn || !deliveryAddress}
+              className="text-xl bg-primary p-2 w-[200px] rounded-full text-[#FFFFFF] shadow-md hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary"
             >
               Confirmed Order
             </button>
