@@ -24,7 +24,7 @@ export default function Navbar() {
   const userMenuRef = useRef(null); // อ้างอิง DOM ของกล่อง dropdown เพื่อใช้เช็คว่าคลิกออกนอกเมนูหรือยัง — Albert
   const { isLoggedIn, logout, user } = useAuth(); // เพิ่ม logout/user เข้ามาด้วย เพื่อทำปุ่ม Logout และเช็ค role ตอนเลือกปลายทาง Dashboard — Albert
   // ปุ่ม Dashboard พาไปคนละหน้าตาม role: admin -> admin dashboard, customer -> customer dashboard — Albert
-  const dashboardPath = user?.role === "admin" ? "/admindashboard" : "/customerdashboard";
+  const dashboardPath = user?.role === "admin" ? "/admindashboard/overview" : "/customerdashboard";
   const navigate = useNavigate(); // ใช้ใน handleLogout เพื่อพากลับหน้า Home — Albert
 
   const toggleMenu = () => setIsOpen(!isOpen);
