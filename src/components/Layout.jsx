@@ -13,9 +13,9 @@ export default function Layout() {
         <div className="flex flex-col min-h-screen">
           <Navbar />
 
-          <div className="flex-1 flex flex-col">
-            <Outlet />
-          </div>
+        <div className="flex-1 flex flex-col bg-tertiary">
+          <Outlet />
+        </div>
 
           <Footer />
         </div>
