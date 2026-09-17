@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import PopShopBlog from "../components/PopShopBlog";
-import mockShopBlog from "../assets/mockData/mockShopBlog";
 import { optimizeImage } from "../lib/utils";
+
+const api_url = import.meta.env.VITE_API_URL;
 
 // "Oct 12"
 function formatBlogDate(date) {
@@ -24,12 +25,28 @@ function formatCategory(category) {
 
 export default function ShopBlogPage() {
   // เอาเฉพาะบทความที่เผยแพร่แล้ว เรียงจากใหม่ไปเก่า
+
+  const [blogs, setBlogs] = useState([]);
+
+  useEffect(() => {
+    async function fetchBlogs() {
+      try {
+        const response = await fetch(`${api_url}/api/v1/blog`);
+        const data = await response.json();
+        setBlogs(data);
+      } catch (err) {
+        setError("โหลดข้อมูลไม่สำเร็จ ลองเช็คว่า server รันอยู่หรือเปล่า");
+      }
+    }
+    fetchBlogs();
+  }, []);
+
   const publishedBlogs = useMemo(
     () =>
-      [...mockShopBlog]
+      [...blogs]
         .filter((shopblog) => shopblog.status === "published")
         .sort((a, b) => new Date(b.published_at) - new Date(a.published_at)),
-    []
+    [blogs],
   );
 
   // hero = ตัวล่าสุด 1 ตัว + ลิสต์ด้านข้าง 3 ตัว
