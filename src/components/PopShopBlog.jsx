@@ -1,15 +1,32 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import mockShopBlog from "../assets/mockData/mockShopBlog";
 import { optimizeImage } from "../lib/utils";
 
 const PAGE_SIZE = 6;
+
+const api_url = import.meta.env.VITE_API_URL;
 
 export default function PopShopBlog({ 
   formatBlogDate = (date) => date || "", 
   formatCategory = (category) => category || "" 
 }) {
-  const publishedBlogs = [...mockShopBlog]
+
+  const [blogs, setBlogs] = useState([]);
+  
+    useEffect(() => {
+      async function fetchBlogs() {
+        try {
+          const response = await fetch(`${api_url}/api/v1/blog`);
+          const data = await response.json();
+          setBlogs(data);
+        } catch (err) {
+          setError("โหลดข้อมูลไม่สำเร็จ ลองเช็คว่า server รันอยู่หรือเปล่า");
+        }
+      }
+      fetchBlogs();
+    }, []);
+
+  const publishedBlogs = [...blogs]
     .filter((blog) => blog.status === "published")
     .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
 
