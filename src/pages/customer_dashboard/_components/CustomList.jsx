@@ -20,34 +20,42 @@ export default function CustomList() {
   };
   return (
     <>
-      <div>
+      <div className="text-primary">
         {/* หัวข้อ */}
         <h2 className="font-display text-2xl font-bold ">Bouquet</h2>
-        {/* หัวตาราง */}
-        <div className="bg-background border-2 rounded-2xl m-4 max-h-[500px] overflow-auto">
-          <div className="grid grid-cols-9 font-body border-b-2">
+
+        {/* Mobile first: card เรียงลงมา / lg ขึ้นไปรวมเป็นกล่องตารางเดียว */}
+        <div className="mt-4 flex flex-col gap-6 lg:m-4 lg:gap-0 lg:max-h-125 lg:overflow-auto lg:rounded-2xl lg:border lg:border-[#929B91]/30 lg:bg-background">
+          {/* หัวตาราง: แสดงเฉพาะ lg ขึ้นไป */}
+          <div className="hidden lg:grid grid-cols-9 font-body p-2 border-b border-[#929B91]/30">
             <div className="col-span-4 pl-2">Product</div>
-            <div className="col-span-3 ">Detail</div>
-            <div className="col-span-1 ">Edit</div>
-            <div className="col-span-1 ">Delete</div>
+            <div className="col-span-3">Detail</div>
+            <div className="col-span-1 text-center">Edit</div>
+            <div className="col-span-1 text-center">Delete</div>
           </div>
-          {/* customList */}
+
+          {/* customList: card (mobile) -> แถวของ grid 9 คอลัมน์ (lg) */}
           {customList.map((design) => (
             <div
               key={design._id}
-              className="grid grid-cols-9 border-b-2 p-2 last:border-b-0"
+              className="flex gap-6 rounded-2xl border border-[#929B91]/30 bg-background p-6 shadow-sm lg:grid lg:grid-cols-9 lg:items-center lg:gap-0 lg:rounded-none lg:border-0 lg:border-b lg:p-4 lg:pl-10 lg:shadow-none lg:last:border-b-0"
             >
-              {/* Products: รูป + ชื่อ design */}
-              <div className="col-span-4">
-                <div className=" flex flex-row gap-2">
-                  <img src="https://placehold.co/62x62" />
-                  <span>{design.design_name}</span>
-                </div>
-              </div>
+              {/* รูป (lg: คอลัมน์แรกของ Product) */}
+              <img
+                src="https://placehold.co/140x140"
+                alt={design.design_name}
+                className="h-35 w-35 shrink-0 object-cover lg:col-span-1 lg:h-15.5 lg:w-15.5"
+              />
 
-              <div className="col-span-3">
+              {/* mobile: คอลัมน์ขวาของ card / lg: contents ให้ลูกเป็น grid item ของแถวเลย */}
+              <div className="flex min-w-0 flex-1 flex-col gap-2 lg:contents">
+                {/* ชื่อ design (lg: คอลัมน์ที่ 2-4 ของ Product) */}
+                <h3 className="font-display text-xl font-semibold lg:col-span-3 lg:font-body lg:text-base lg:font-normal">
+                  {design.design_name}
+                </h3>
+
                 {/* Detail ใส่บูลเล็ทโดยใส่ class ไปเพราะว่า tailwind มันลบออกหมดเลย */}
-                <ul className="list-disc list-inside">
+                <ul className="list-disc list-inside text-sm lg:col-span-3 lg:text-base">
                   {design.components.map((item) => {
                     const inv = findInv(item.inventory_item_id);
                     return (
@@ -57,30 +65,27 @@ export default function CustomList() {
                     );
                   })}
                 </ul>
-              </div>
 
-              <div className="col-span-1">
-                
+                {/* mobile: ปุ่มชิดขวาล่าง / lg: contents ให้ปุ่มแต่ละอันเป็นช่องของตาราง */}
+                <div className="mt-auto flex justify-end gap-3 pt-2 lg:contents">
                   <button
-                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-background border border-neutral/30 text-neutral hover:bg-secondary transition-colors md:bg-transparent md:border-none hover:cursor-pointer"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral/30 bg-background text-neutral transition-colors hover:cursor-pointer hover:bg-secondary lg:col-span-1 lg:justify-self-center lg:border-none lg:bg-transparent"
                     onClick={() => {
                       editHandler(design._id);
                     }}
                   >
-                    <SquarePen className="w-4 h-4" />
+                    <SquarePen className="h-4 w-4" />
                   </button>
-           
-              </div>
 
-              <div className="col-span-1">
-                <button
-                  className="w-9 h-9 rounded-xl flex items-center justify-center bg-destructive text-white hover:opacity-90 transition-opacity hover:cursor-pointer"
-                  onClick={() => {
-                    deleteHandler(design._id);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  <button
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive text-white transition-opacity hover:cursor-pointer hover:opacity-90 lg:col-span-1 lg:justify-self-center"
+                    onClick={() => {
+                      deleteHandler(design._id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

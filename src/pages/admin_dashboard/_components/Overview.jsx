@@ -236,6 +236,12 @@ const SalePieChartData = [
   { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
   { browser: "other", visitors: 90, fill: "var(--color-other)" },
 ];
+function editHandler(){
+  return(<></>)
+}
+function deleteHandler(){
+  return(<></>)
+}
 
 
 export default function Overview() {
@@ -441,9 +447,9 @@ export default function Overview() {
             </div>
 
             {/* shipment status chart */}
-            <div className="mt-4 bg-background md:w-[30%] h-full">
+            <div className="mt-4 md:w-[30%] h-full">
               <h2 className="text-2xl font-semibold pb-2">Shipment Status</h2>
-              <Card className="flex flex-col">
+              <Card className="flex flex-col bg-background">
                 <CardHeader className="items-center pb-0">
                   <CardTitle>Orders by Status</CardTitle>
                   <CardDescription>Current shipment breakdown</CardDescription>
@@ -510,6 +516,7 @@ export default function Overview() {
                             <button
                               className="w-9 h-9 rounded-xl flex items-center justify-center bg-destructive text-white hover:opacity-90 transition-opacity hover:cursor-pointer"
                               aria-label="Delete order"
+                              
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -524,7 +531,7 @@ export default function Overview() {
             {/* Sale Overview */}
             <div className="mt-4 md:w-[30%] h-full">
               <h2 className="text-2xl font-semibold pb-2">Sale Overview</h2>
-              <Card className="flex flex-col">
+              <Card className="flex flex-col bg-background">
                 <CardHeader className="items-center pb-0">
                   <CardTitle>Pie Chart - Legend</CardTitle>
                   <CardDescription>January - June 2024</CardDescription>
