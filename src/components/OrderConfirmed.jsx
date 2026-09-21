@@ -16,7 +16,7 @@ export default function OrderConfirmed({ onClose }) {
 
   const handleViewOrder = () => {
     onClose();
-    navigate("/customerdashboard"); // ปรับ path ให้ตรงกับ route จริง
+    navigate("/customerdashboard/purchases"); // ปรับ path ให้ตรงกับ route จริง
   };
 
   const handleBackToShop = () => {
@@ -89,7 +89,9 @@ export default function OrderConfirmed({ onClose }) {
                   <p className="font-body">{formatPrice(order.deliveryFee)}</p>
                 </li>
                 <li className="flex flex-row justify-between px-2">
-                  <p className="font-display text-xl font-semibold">Total Paid</p>
+                  <p className="font-display text-xl font-semibold">
+                    Total Paid
+                  </p>
                   <p className="font-body">{formatPrice(order.grandTotal)}</p>
                 </li>
               </ul>
