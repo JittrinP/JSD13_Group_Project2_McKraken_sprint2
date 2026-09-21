@@ -1,5 +1,88 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
+
+// ==========================================
+// API HELPERS (ยิงไปหา backend จริงที่ /api/v1/user/:userId/address)
+// ยังไม่ถูกเรียกใช้ตรงไหนตอนนี้ แค่เขียนเตรียมไว้ก่อน (Step 1)
+// ==========================================
+
+const API_BASE = import.meta.env.VITE_API_URL;
+
+// ดึงที่อยู่ทั้งหมดของ user คนนั้น (GET)
+async function getAddresses(userId) {
+  const res = await fetch(`${API_BASE}/api/v1/user/${userId}/address`);
+  if (!res.ok) {
+    throw new Error("Failed to fetch addresses");
+  }
+  return res.json(); // ได้ array ของที่อยู่กลับมาตรงๆ
+}
+
+// เพิ่มที่อยู่ใหม่ 1 รายการ (POST)
+async function addAddress(userId, addressData) {
+  const res = await fetch(`${API_BASE}/api/v1/user/${userId}/address`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(addressData),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to add address");
+  }
+  const data = await res.json();
+  return data.newAddress;
+}
+
+// แก้ไขที่อยู่ 1 รายการ (PATCH) — addressData ส่งแค่ field ที่อยากแก้ก็ได้
+async function updateAddress(userId, addressId, addressData) {
+  const res = await fetch(
+    `${API_BASE}/api/v1/user/${userId}/address/${addressId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(addressData),
+    },
+  );
+  if (!res.ok) {
+    throw new Error("Failed to update address");
+  }
+  const data = await res.json();
+  return data.updatedAddress;
+}
+
+// ลบที่อยู่ 1 รายการ (DELETE)
+async function deleteAddress(userId, addressId) {
+  const res = await fetch(
+    `${API_BASE}/api/v1/user/${userId}/address/${addressId}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) {
+    throw new Error("Failed to delete address");
+  }
+  return res.json();
+}
+
+// แปลง address object จาก backend (recipient_name, address, sub_district, ...) ให้เป็นรูปแบบที่ component นี้ใช้ (name, addressLine, subDistrict, ...)
+function mapAddressFromApi(addr) {
+  return {
+    id: addr._id,
+    name: addr.recipient_name,
+    phone: addr.phone,
+    addressLine: addr.address,
+    subDistrict: addr.sub_district || "",
+    district: addr.district || "",
+    province: addr.province || "",
+    postalCode: addr.postal_code || "",
+    isDefault: addr.is_default,
+  };
+}
+
+// backend คืน array ตามลำดับที่เก็บใน database เฉยๆ ไม่ได้เอา default ขึ้นก่อนให้
+// ฟังก์ชันนี้ map + เรียงให้ default ขึ้นบนสุดเสมอ ใช้แทน data.map(mapAddressFromApi) ตรงๆ ทุกจุด
+function mapAndSortAddresses(data) {
+  const mapped = data.map(mapAddressFromApi);
+  const defaultItem = mapped.find((item) => item.isDefault);
+  const others = mapped.filter((item) => !item.isDefault);
+  return defaultItem ? [defaultItem, ...others] : mapped;
+}
 
 export default function CustomerAddress() {
   // ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ในระบบผ่าน AuthContext
@@ -9,25 +92,8 @@ export default function CustomerAddress() {
   // 1. STATE MANAGEMENT
   // ==========================================
 
-  // state ข้อมูลที่อยู่ทั้งหมด (ดึงจาก currentUser แทน mockData เริ่มต้น)
-  const [addresses, setAddresses] = useState(() => {
-    const initial = (currentUser?.shipping_addresses || []).map((addr, index) => ({
-      id: addr.id || `addr-init-${index}`,
-      name: `${currentUser?.profile?.first_name || ""} ${currentUser?.profile?.last_name || ""}`.trim() || "Customer Name",
-      phone: addr.phone || currentUser?.phone_number || "",
-      addressLine: addr.address || "",
-      subDistrict: addr.sub_district || "",
-      district: addr.district || "",
-      province: addr.province || "",
-      postalCode: addr.postal_code || "",
-      isDefault: addr.is_default || index === 0,
-    }));
-
-    if (initial.length > 0 && !initial.some((a) => a.isDefault)) {
-      initial[0].isDefault = true;
-    }
-    return initial;
-  });
+  // state ข้อมูลที่อยู่ทั้งหมด เริ่มต้นเป็น array ว่างก่อน รอ useEffect ด้านล่าง fetch จาก API มาเติมให้
+  const [addresses, setAddresses] = useState([]);
 
   // State ควบคุม Modal สำหรับ เพิ่ม/แก้ไข ที่อยู่
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,6 +113,20 @@ export default function CustomerAddress() {
     province: "",
     postalCode: "",
   });
+
+  // ==========================================
+  // 1b. โหลดที่อยู่จาก API ตอน component เปิดขึ้นมาครั้งแรก (หรือตอน currentUser เปลี่ยน เช่น login ใหม่)
+  // ==========================================
+  useEffect(() => {
+    // ยังไม่ล็อกอิน ไม่มี id ให้ยิง API เลยข้ามไปก่อน
+    if (!currentUser?._id) return;
+
+    getAddresses(currentUser._id)
+      .then((data) => {
+        setAddresses(mapAndSortAddresses(data));
+      })
+      .catch((err) => console.error(err));
+  }, [currentUser?._id]);
 
   // ==========================================
   // 2. MODAL CONTROLLERS (เพิ่ม/แก้ไข ที่อยู่)
@@ -103,9 +183,18 @@ export default function CustomerAddress() {
     setDeletingTarget(null);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
+    // Step 5: ลบที่อยู่ผ่าน API จริง แทนการ filter local state เอง
     if (deletingTarget) {
-      setAddresses((prev) => prev.filter((item) => item.id !== deletingTarget.id));
+      try {
+        await deleteAddress(currentUser._id, deletingTarget.id);
+        const data = await getAddresses(currentUser._id);
+        setAddresses(mapAndSortAddresses(data));
+      } catch (err) {
+        console.error(err);
+        alert("ลบที่อยู่ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        return;
+      }
     }
     handleCloseDeleteModal();
   };
@@ -114,7 +203,7 @@ export default function CustomerAddress() {
   // 4. ADDRESS ACTIONS (บันทึก / ตั้งที่อยู่หลัก)
   // ==========================================
 
-  const handleSaveAddress = (e) => {
+  const handleSaveAddress = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.addressLine) {
       alert("กรุณากรอกข้อมูล ชื่อ-นามสกุล, เบอร์โทรศัพท์ และที่อยู่ให้ครบถ้วน");
@@ -122,54 +211,61 @@ export default function CustomerAddress() {
     }
 
     if (editingAddressId) {
-      setAddresses((prev) => {
-        const target = prev.find((item) => item.id === editingAddressId);
-        if (!target) return prev;
+      // Step 4: แก้ไขที่อยู่ผ่าน API จริง แทนการแก้ local state เอง (ฟอร์ม edit ไม่มีช่อง is_default เลยไม่ต้องส่ง)
+      try {
+        await updateAddress(currentUser._id, editingAddressId, {
+          recipient_name: formData.name,
+          phone: formData.phone,
+          address: formData.addressLine,
+          sub_district: formData.subDistrict,
+          district: formData.district,
+          province: formData.province,
+          postal_code: formData.postalCode,
+        });
 
-        const updatedTarget = { ...target, ...formData };
-        const others = prev.filter((item) => item.id !== editingAddressId);
-
-        if (updatedTarget.isDefault) {
-          return [updatedTarget, ...others];
-        } else {
-          const defaultItem = others.find((item) => item.isDefault);
-          const nonDefaults = others.filter((item) => !item.isDefault);
-          return defaultItem
-            ? [defaultItem, updatedTarget, ...nonDefaults]
-            : [updatedTarget, ...nonDefaults];
-        }
-      });
+        const data = await getAddresses(currentUser._id);
+        setAddresses(mapAndSortAddresses(data));
+      } catch (err) {
+        console.error(err);
+        alert("แก้ไขที่อยู่ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        return;
+      }
     } else {
-      const newAddress = {
-        id: `addr-${Date.now()}`,
-        ...formData,
-        isDefault: addresses.length === 0,
-      };
+      // Step 3: เพิ่มที่อยู่ใหม่ผ่าน API จริง แทนการสร้าง object ปลอมเก็บไว้ใน local state
+      try {
+        await addAddress(currentUser._id, {
+          recipient_name: formData.name,
+          phone: formData.phone,
+          address: formData.addressLine,
+          sub_district: formData.subDistrict,
+          district: formData.district,
+          province: formData.province,
+          postal_code: formData.postalCode,
+          is_default: addresses.length === 0,
+        });
 
-      setAddresses((prev) => {
-        if (newAddress.isDefault) {
-          return [newAddress, ...prev];
-        }
-        const defaultItem = prev.find((item) => item.isDefault);
-        const nonDefaults = prev.filter((item) => !item.isDefault);
-        return defaultItem
-          ? [defaultItem, newAddress, ...nonDefaults]
-          : [newAddress, ...nonDefaults];
-      });
+        // ดึงรายการที่อยู่ล่าสุดจาก backend มาแทนของเดิมทั้งหมด กันข้อมูลไม่ตรงกัน (เช่น is_default ของรายการอื่นที่อาจถูกปิดไปพร้อมกัน)
+        const data = await getAddresses(currentUser._id);
+        setAddresses(mapAndSortAddresses(data));
+      } catch (err) {
+        console.error(err);
+        alert("เพิ่มที่อยู่ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        return;
+      }
     }
     handleCloseModal();
   };
 
-  const handleMakeDefault = (id) => {
-    setAddresses((prev) => {
-      const updated = prev.map((item) => ({
-        ...item,
-        isDefault: item.id === id,
-      }));
-      const defaultItem = updated.find((item) => item.isDefault);
-      const others = updated.filter((item) => !item.isDefault);
-      return defaultItem ? [defaultItem, ...others] : updated;
-    });
+  const handleMakeDefault = async (id) => {
+    // Step 6: ตั้งที่อยู่หลักผ่าน API จริง — backend มี logic ปิด is_default ของรายการอื่นให้อัตโนมัติอยู่แล้ว (ทดสอบผ่านตอนทำ PATCH)
+    try {
+      await updateAddress(currentUser._id, id, { is_default: true });
+      const data = await getAddresses(currentUser._id);
+      setAddresses(mapAndSortAddresses(data));
+    } catch (err) {
+      console.error(err);
+      alert("ตั้งที่อยู่หลักไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    }
   };
 
   // ==========================================
