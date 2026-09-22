@@ -1,18 +1,31 @@
 import { useState } from "react";
 import { Flower2, X } from "lucide-react";
+// 1. Import api มาใช้งาน
+import { api } from "../../context/AuthContext";
 
 export default function ForgetPassword({ isOpen, onClose, onCodeSent }) {
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-    // ไม่เช็คว่า email มีอยู่จริงไหม (ตั้งใจ ไม่บอกว่า account นี้มีอยู่หรือเปล่า)
-    // mock ไปก่อนว่า "ส่ง code แล้ว" แล้วพาไปหน้า Renew ทันที — Albert
-    onCodeSent?.(email);
-    setEmail("");
+    try {
+      // ยิง API ขอส่ง Code (Backend จะแอบสร้าง "1234" เก็บไว้ให้)
+      await api.post("/auth/forget-password", { email });
+
+      // เปลี่ยนไปหน้า Renew พร้อมส่งอีเมลไปด้วย
+      onCodeSent?.(email);
+      setEmail("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to process request.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -43,8 +56,8 @@ export default function ForgetPassword({ isOpen, onClose, onCodeSent }) {
               Atelier de Flora
             </p>
             <p className="w-full text-center font-body text-base text-primary">
-              Please fill your account, we'll send a verification code to
-              your email
+              Please fill your account, we'll send a verification code to your
+              email
             </p>
           </div>
         </div>
@@ -75,7 +88,7 @@ export default function ForgetPassword({ isOpen, onClose, onCodeSent }) {
             type="submit"
             className="flex h-12 w-full items-center justify-center rounded-lg bg-primary font-body text-sm font-semibold tracking-[0.7px] text-white"
           >
-            Reset Password →
+            {isLoading ? "Reseting Password..." : "Reset Password →"}
           </button>
         </form>
       </div>

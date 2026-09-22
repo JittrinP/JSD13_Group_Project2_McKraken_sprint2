@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { Flower2, X } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+// Import api แทน useAuth
+import { api } from "../../context/AuthContext";
 
 const MIN_PASSWORD_LENGTH = 8;
-const MOCK_VERIFICATION_CODE = "1234"; // mock code เดียวกันทุก account รอวันต่อระบบส่ง OTP จริงทางอีเมล — Albert
 
-export default function RenewPassword({ isOpen, onClose, email, onSwitchToLogin }) {
-  const { resetPassword } = useAuth();
+export default function RenewPassword({
+  isOpen,
+  onClose,
+  email,
+  onSwitchToLogin,
+}) {
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -21,27 +26,39 @@ export default function RenewPassword({ isOpen, onClose, email, onSwitchToLogin 
     setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    if (code !== MOCK_VERIFICATION_CODE) {
-      setError("Invalid verification code.");
-      return;
-    }
-
+    // เช็คความถูกต้องของรหัสผ่านฝั่งหน้าบ้าน
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
-
     if (newPassword !== confirmNewPassword) {
       setError("Passwords do not match.");
       return;
     }
 
-    resetPassword(email, newPassword);
-    resetForm();
-    onSwitchToLogin?.(); // เปลี่ยนรหัสสำเร็จ พากลับไป Login popup ให้กรอกเอง เหมือน flow ของ Register — Albert
+    setIsLoading(true);
+
+    try {
+      // ส่งข้อมูลทั้ง 3 ตัวไปให้ Backend ตรวจสอบ
+      await api.post("/auth/reset-password", {
+        email,
+        code,
+        newPassword,
+      });
+
+      // ถ้า Backend ตอบกลับ 200 (สำเร็จ) ให้ล้างฟอร์มแล้วพาไปหน้า Login
+      resetForm();
+      onSwitchToLogin?.();
+    } catch (err) {
+      // ถ้า Code ผิด หรือหมดเวลา Backend จะส่ง Error กลับมา
+      setError(err.response?.data?.message || "Invalid verification code.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -138,14 +155,16 @@ export default function RenewPassword({ isOpen, onClose, email, onSwitchToLogin 
           </div>
 
           {error && (
-            <p className="w-full text-center font-body text-sm text-red-600">{error}</p>
+            <p className="w-full text-center font-body text-sm text-red-600">
+              {error}
+            </p>
           )}
 
           <button
             type="submit"
             className="flex h-12 w-full items-center justify-center rounded-lg bg-primary font-body text-sm font-semibold tracking-[0.7px] text-white"
           >
-            Change Password →
+            {isLoading ? "Changing Password..." : "Change Password →"}
           </button>
         </form>
       </div>
