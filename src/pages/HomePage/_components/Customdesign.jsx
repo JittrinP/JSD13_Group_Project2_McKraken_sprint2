@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import '@google/model-viewer';
+import flowerModel from '../../../assets/flower.glb?url';
 
 const CustomDesign = () => {
   // =========================================================================
@@ -150,14 +152,14 @@ const CustomDesign = () => {
         <div className="relative bg-secondary rounded-3xl p-0 flex justify-center items-center min-h-100 lg:min-h-130 shadow-sm border border-black/5 overflow-hidden">
           
           <div className="w-full h-full flex justify-center items-center overflow-hidden rounded-3xl">
-            <img 
-              src="src/assets/images/Custom_Design.jpg" 
-              alt="Custom Flower Arrangement Design Preview" 
-              className="w-full h-full object-cover rounded-3xl shadow-inner transition-all duration-300"
-              onError={(e) => {
-                e.target.src = 'https://png.pngtree.com/png-clipart/20250210/original/pngtree-illustration-flowers-bouquet-png-image_20409869.png';
-              }} 
-            />
+            <model-viewer
+              src={flowerModel}
+              alt="3D custom flower arrangement preview"
+              camera-controls
+              auto-rotate
+              shadow-intensity="1"
+              className="w-full h-full rounded-3xl shadow-inner"
+            ></model-viewer>
           </div>
 
         </div>
