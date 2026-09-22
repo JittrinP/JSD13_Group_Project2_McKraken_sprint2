@@ -2,34 +2,44 @@ import { useState } from "react";
 import { Flower2, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-export default function LoginPage({ isOpen, onClose, onSwitchToRegister, onForgotPassword }) {
-  const { users, login } = useAuth(); // เช็คจาก users ใน Context แทน mockUser ตรงๆ เพื่อให้เจอ account ที่เพิ่งสมัครระหว่าง session นี้ด้วย — Albert
+export default function LoginPage({
+  isOpen,
+  onClose,
+  onSwitchToRegister,
+  onForgotPassword,
+}) {
+  // ดึงมาแค่ฟังก์ชัน login() ไม่ต้องเอา users มาแล้ว
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  // เพิ่ม State สำหรับสถานะกำลังโหลด (เผื่อเอาไปทำปุ่มหมุนๆ)
+  const [isLoading, setIsLoading] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const user = users.find((u) => u.email === email);
-
-    if (!user || user.password_hash !== password) {
-      setError("Invalid email or password.");
-      return;
-    }
-
-    if (user.status === "suspended") {
-      setError("This account has been suspended.");
-      return;
-    }
-
     setError("");
-    setEmail("");
-    setPassword("");
-    login(user);
-    onClose?.();
+    setIsLoading(true);
+
+    try {
+      // เรียกใช้ฟังก์ชัน login จาก Context ที่เราเขียนยิง API ไว้
+      await login(email, password);
+
+      // ถ้าสำเร็จ ให้ล้างฟอร์มและปิด Popup
+      setEmail("");
+      setPassword("");
+      onClose?.();
+    } catch (err) {
+      // จับ Error ที่ Backend ส่งกลับมา (เช่น รหัสผิด บัญชีโดนแบน) มาแสดงผล
+      const backendErrorMessage =
+        err.response?.data?.message || "Invalid email or password.";
+      setError(backendErrorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,9 +75,15 @@ export default function LoginPage({ isOpen, onClose, onSwitchToRegister, onForgo
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex w-full flex-col items-center gap-6 p-[10px] pb-8">
+        <form
+          onSubmit={handleSubmit}
+          className="flex w-full flex-col items-center gap-6 p-[10px] pb-8"
+        >
           <div className="flex w-full flex-col items-center gap-[10px] py-[10px]">
-            <label htmlFor="login-email" className="w-full font-body text-base text-primary">
+            <label
+              htmlFor="login-email"
+              className="w-full font-body text-base text-primary"
+            >
               Email Address
             </label>
             <input
@@ -83,7 +99,10 @@ export default function LoginPage({ isOpen, onClose, onSwitchToRegister, onForgo
 
           <div className="flex w-full flex-col items-center gap-[10px] py-[10px]">
             <div className="flex w-full items-start justify-between">
-              <label htmlFor="login-password" className="font-body text-base text-primary">
+              <label
+                htmlFor="login-password"
+                className="font-body text-base text-primary"
+              >
                 Password
               </label>
               <button
@@ -106,18 +125,22 @@ export default function LoginPage({ isOpen, onClose, onSwitchToRegister, onForgo
           </div>
 
           {error && (
-            <p className="w-full text-center font-body text-sm text-red-600">{error}</p>
+            <p className="w-full text-center font-body text-sm text-red-600">
+              {error}
+            </p>
           )}
 
           <button
             type="submit"
             className="flex h-12 w-full items-center justify-center rounded-lg bg-primary font-body text-sm font-semibold tracking-[0.7px] text-white"
           >
-            Login →
+            {isLoading ? "Logging in..." : "Login →"}
           </button>
 
           <div className="flex h-[25px] items-center justify-center gap-5">
-            <p className="font-body text-base text-primary">Don't have an account ?</p>
+            <p className="font-body text-base text-primary">
+              Don't have an account ?
+            </p>
             <button
               type="button"
               onClick={onSwitchToRegister}
