@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import '@google/model-viewer';
 import flowerModel from '../../../assets/flower.glb?url';
-import { createDesign } from '../../../lib/customDesignApi';
+import { createDesign, updateDesign, getDesign } from '../../../lib/customDesignApi';
 
 const CustomDesign = () => {
   // =========================================================================
@@ -51,6 +52,11 @@ const CustomDesign = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
+  /* Edit mode: มาจากลิงก์ /?edit=<designId> ที่กดจาก CustomList.jsx
+     มี id นี้ = กำลังแก้ design เดิม (PATCH), ไม่มี = สร้างใหม่ (POST) */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editingDesignId = searchParams.get('edit');
+
   // =========================================================================
   // SECTION 2: LIFECYCLE & BACKEND INTEGRATION
   // =========================================================================
@@ -97,6 +103,45 @@ const CustomDesign = () => {
     fetchInventory();
   }, []);
 
+  // ถ้ามาจาก "?edit=<id>" (กด edit ที่ CustomList.jsx) ให้ดึง design เดิมมา prefill ฟอร์ม
+  useEffect(() => {
+    if (!editingDesignId) return;
+
+    const loadDesignToEdit = async () => {
+      try {
+        const design = await getDesign(editingDesignId);
+
+        // component ที่เป็น wrapping_paper/vase ถือเป็น "base" (ช่องเดียว) ที่เหลือถือเป็น "flower" (เรียงเข้า flower1-3)
+        const baseComponent = design.components.find((c) =>
+          ['wrapping_paper', 'vase'].includes(c.inventory_item_id?.category),
+        );
+        const flowerComponents = design.components.filter(
+          (c) => c !== baseComponent,
+        );
+
+        // UI นี้รองรับแค่ base 1 ช่อง + flower 3 ช่องตายตัว ถ้า design เดิมมีมากกว่านี้ ส่วนเกินจะถูกตัดออกตอน edit
+        setSelections({
+          baseId: baseComponent?.inventory_item_id?._id || '',
+          flower1Id: flowerComponents[0]?.inventory_item_id?._id || '',
+          flower1Qty: flowerComponents[0]?.quantity || 1,
+          flower2Id: flowerComponents[1]?.inventory_item_id?._id || '',
+          flower2Qty: flowerComponents[1]?.quantity || 1,
+          flower3Id: flowerComponents[2]?.inventory_item_id?._id || '',
+          flower3Qty: flowerComponents[2]?.quantity || 1,
+        });
+        setSaveFormData((prev) => ({
+          ...prev,
+          name: design.design_name || '',
+          description: design.design_description || '',
+        }));
+      } catch (error) {
+        console.error("Failed to load design for editing", error);
+        setSaveError("Could not load the bouquet you're trying to edit.");
+      }
+    };
+    loadDesignToEdit();
+  }, [editingDesignId]);
+
   // ปิด Popup ด้วยปุ่ม ESC
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -135,12 +180,19 @@ const CustomDesign = () => {
     setSaveError('');
     setIsSaving(true);
 
+    const payload = {
+      design_name: saveFormData.name,
+      design_description: saveFormData.description,
+      components: selectionsToComponents(selections),
+    };
+
     try {
-      await createDesign({
-        design_name: saveFormData.name,
-        design_description: saveFormData.description,
-        components: selectionsToComponents(selections),
-      });
+      if (editingDesignId) {
+        await updateDesign(editingDesignId, payload);
+        setSearchParams({}); // เอา ?edit=<id> ออกจาก URL หลังแก้เสร็จ กลับเป็นโหมดสร้างใหม่
+      } else {
+        await createDesign(payload);
+      }
 
       setIsModalOpen(false);
       setSaveFormData({ name: '', description: '', preset: 'preset1' });
@@ -372,7 +424,7 @@ const CustomDesign = () => {
             </button>
             
             <h2 className="font-display text-2xl font-bold text-primary mb-6 border-b border-border/50 pb-3 inline-block">
-              Custom Design
+              {editingDesignId ? 'Edit Custom Design' : 'Custom Design'}
             </h2>
 
             <form onSubmit={handleConfirmSave} className="space-y-4">
@@ -427,7 +479,11 @@ const CustomDesign = () => {
                   disabled={isSaving}
                   className="px-8 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSaving ? 'Saving...' : 'Confirm Save'}
+                  {isSaving
+                    ? 'Saving...'
+                    : editingDesignId
+                      ? 'Save Changes'
+                      : 'Confirm Save'}
                 </button>
               </div>
             </form>
