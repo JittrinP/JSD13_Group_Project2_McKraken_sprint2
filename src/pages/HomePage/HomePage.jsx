@@ -5,6 +5,7 @@ import CustomerReview from "./_components/CustomerReview";
 import ShopDetail from "./_components/ShopDetail";
 import PopularProducts from "../../components/PopularProducts";
 import PopShopBlog from "../../components/PopShopBlog";
+import CustomDesign from "../HomePage/_components/Customdesign";
 
 export default function HomePage() {
   // เอาไว้ใช้สำหรับ Footer กดที่ contact ให้วิ่งไปที่ shop-detail ที่หน้า homePage
@@ -23,6 +24,7 @@ export default function HomePage() {
   return (
     <div>
       <div className="bg-tertiary min-h-screen flex flex-col items-center justify-center w-full">
+        <CustomDesign />
         <PopularProducts />
         <PopShopBlog />
         <Careguide />
