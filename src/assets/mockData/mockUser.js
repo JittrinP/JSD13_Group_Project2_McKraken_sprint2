@@ -10,7 +10,9 @@
 
 const mockUser = [
   {
-    _id: "u01",
+    // _id นี้แก้ให้ตรงกับ _id จริงใน MongoDB (seed ผ่าน sprint3_backend/src/seed/userquery.mongodb.js)
+    // เพื่อให้ทดสอบเรียก address API จริงได้ระหว่างที่ auth ยังเป็น mock อยู่ — ลบทิ้งได้เลยตอนต่อ auth จริงแล้ว
+    _id: "6ab0431368f773ecacde8f45",
     email: "somsri.k@gmail.com",
     password_hash: "somsri123",
     phone_number: "081-234-5678",
@@ -36,7 +38,7 @@ const mockUser = [
     ],
   },
   {
-    _id: "u02",
+    _id: "6ab0431368f773ecacde8f46",
     email: "admin@atelierdeflora.com",
     password_hash: "admin1234",
     phone_number: "089-999-8888",
@@ -62,7 +64,7 @@ const mockUser = [
     ],
   },
   {
-    _id: "u03",
+    _id: "6ab0431368f773ecacde8f47",
     email: "pichaya.n@hotmail.com",
     password_hash: "pichaya456",
     phone_number: "062-345-1290",
@@ -88,7 +90,7 @@ const mockUser = [
     ],
   },
   {
-    _id: "u04",
+    _id: "6ab0431368f773ecacde8f48",
     email: "kanyarat.p@gmail.com",
     password_hash: "kanyarat789",
     phone_number: "095-678-1234",
