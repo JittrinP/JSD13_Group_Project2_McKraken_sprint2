@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '@google/model-viewer';
 import flowerModel from '../../../assets/flower.glb?url';
+import { createDesign } from '../../../lib/customDesignApi';
 
 const CustomDesign = () => {
   // =========================================================================
@@ -47,6 +48,8 @@ const CustomDesign = () => {
   });
   const [isCartPopupOpen, setIsCartPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   // =========================================================================
   // SECTION 2: LIFECYCLE & BACKEND INTEGRATION
@@ -117,15 +120,36 @@ const CustomDesign = () => {
     setIsCartPopupOpen(true);
   };
 
+  // แปลง selections (baseId, flower1Id/Qty, flower2Id/Qty, flower3Id/Qty) ให้เป็น components array ตามที่ backend ต้องการ
+  const selectionsToComponents = (sel) => {
+    const components = [];
+    if (sel.baseId) components.push({ inventory_item_id: sel.baseId, quantity: 1 });
+    if (sel.flower1Id) components.push({ inventory_item_id: sel.flower1Id, quantity: sel.flower1Qty });
+    if (sel.flower2Id) components.push({ inventory_item_id: sel.flower2Id, quantity: sel.flower2Qty });
+    if (sel.flower3Id) components.push({ inventory_item_id: sel.flower3Id, quantity: sel.flower3Qty });
+    return components;
+  };
+
   const handleConfirmSave = async (e) => {
     e.preventDefault();
-    const payload = { ...saveFormData, details: selections };
-    
-    // [BACKEND TODO]: สร้าง POST /api/user/designs รอรับ Payload ก้อนนี้
-    console.log("Custom Design Payload:", payload);
-    
-    setIsModalOpen(false);
-    setSaveFormData({ name: '', description: '', preset: 'preset1' }); 
+    setSaveError('');
+    setIsSaving(true);
+
+    try {
+      await createDesign({
+        design_name: saveFormData.name,
+        design_description: saveFormData.description,
+        components: selectionsToComponents(selections),
+      });
+
+      setIsModalOpen(false);
+      setSaveFormData({ name: '', description: '', preset: 'preset1' });
+    } catch (error) {
+      console.error("Failed to save custom design", error);
+      setSaveError(error.message || "Save failed. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // =========================================================================
@@ -394,12 +418,16 @@ const CustomDesign = () => {
                   </div>
                 </div>
               </div>
+              {saveError && (
+                <p className="text-center text-sm text-red-600">{saveError}</p>
+              )}
               <div className="pt-6 flex justify-center">
-                <button 
+                <button
                   type="submit"
-                  className="px-8 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all cursor-pointer"
+                  disabled={isSaving}
+                  className="px-8 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Confirm Save
+                  {isSaving ? 'Saving...' : 'Confirm Save'}
                 </button>
               </div>
             </form>
