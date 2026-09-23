@@ -1,5 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { mockCustomerReviews } from "../../../assets/mockData/mockCMR"; 
+
+const API_BASE = import.meta.env.VITE_API_URL; // ฐาน URL ของ backend (รวม /api/v1 อยู่แล้วใน .env)
+
+async function getReviews() { // ดึงรีวิวทั้งหมด (GET, ไม่มี auth ไม่มี params)
+  const res = await fetch(`${API_BASE}/review`);
+  if (!res.ok) {
+    throw new Error("Failed to fetch reviews"); // ให้ .catch ฝั่ง useEffect จัดการ
+  }
+  return res.json(); // ได้ array ของรีวิวกลับมาตรงๆ
+}
+
+function mapReviewFromApi(review) { // แปลง field จาก backend (snake_case) ให้ตรงกับที่ component นี้ใช้ (camelCase)
+  return {
+    id: review._id, // ObjectId จาก Mongo
+    customerName: review.customer_name,
+    rating: review.rating,
+    comment: review.comment,
+    productName: review.product_name,
+    reviewDate: review.review_date,
+    avatar: review.avatar, // อาจเป็น undefined ได้ ฝั่ง UI มี fallback อยู่แล้ว
+  };
+}
 
 // ฟังก์ชันสำหรับสุ่มเลือก N ชิ้นแบบไม่ซ้ำกัน (Fisher-Yates Shuffle)
 const getRandomReviews = (reviews, count = 3) => {
@@ -65,9 +86,16 @@ const StarRating = ({ rating }) => {
 export default function CustomerReview() {
   const [randomReviews, setRandomReviews] = useState([]);
 
-  // สุ่มเลือก 3 รีวิวใหม่ทุกครั้งที่โหลดหน้า หรือ Component Re-render
-  useEffect(() => {
-    setRandomReviews(getRandomReviews(mockCustomerReviews, 3));
+  useEffect(() => { // ดึงรีวิวทั้งหมดจาก backend แล้วสุ่มเลือก 3 รีวิวมาแสดง (สุ่มฝั่ง client เหมือนเดิม)
+    getReviews()
+      .then((data) => {
+        const reviews = data.map(mapReviewFromApi); // map field ให้ตรงกับที่ JSX ด้านล่างใช้
+        setRandomReviews(getRandomReviews(reviews, 3));
+      })
+      .catch((err) => {
+        console.error("Failed to load customer reviews:", err); // log ไว้ debug
+        setRandomReviews([]); // fetch fail ไม่ให้หน้า home พัง แค่ไม่มีการ์ดรีวิวแสดง
+      });
   }, []);
 
   return (
