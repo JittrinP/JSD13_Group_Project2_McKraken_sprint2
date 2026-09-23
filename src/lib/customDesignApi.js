@@ -6,7 +6,7 @@ const API_BASE = import.meta.env.VITE_API_URL;
 
 // ดึง saved design ทั้งหมดของ user ที่ login อยู่ (GET)
 export async function getDesigns() {
-  const res = await fetch(`${API_BASE}/api/v1/custom-design`, {
+  const res = await fetch(`${API_BASE}/custom-design`, {
     credentials: "include",
   });
   if (!res.ok) {
@@ -17,7 +17,7 @@ export async function getDesigns() {
 
 // ดึง design เดียว (GET) ใช้ตอนกดแก้ไข
 export async function getDesign(designId) {
-  const res = await fetch(`${API_BASE}/api/v1/custom-design/${designId}`, {
+  const res = await fetch(`${API_BASE}/custom-design/${designId}`, {
     credentials: "include",
   });
   if (!res.ok) {
@@ -28,7 +28,7 @@ export async function getDesign(designId) {
 
 // เซฟ design ใหม่ (POST) — designData: { design_name, design_description, components: [{ inventory_item_id, quantity }] }
 export async function createDesign(designData) {
-  const res = await fetch(`${API_BASE}/api/v1/custom-design`, {
+  const res = await fetch(`${API_BASE}/custom-design`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -43,7 +43,7 @@ export async function createDesign(designData) {
 
 // แก้ design (PATCH) ส่งแค่ field ที่อยากแก้ก็ได้
 export async function updateDesign(designId, designData) {
-  const res = await fetch(`${API_BASE}/api/v1/custom-design/${designId}`, {
+  const res = await fetch(`${API_BASE}/custom-design/${designId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -58,7 +58,7 @@ export async function updateDesign(designId, designData) {
 
 // ลบ design (DELETE)
 export async function deleteDesign(designId) {
-  const res = await fetch(`${API_BASE}/api/v1/custom-design/${designId}`, {
+  const res = await fetch(`${API_BASE}/custom-design/${designId}`, {
     method: "DELETE",
     credentials: "include",
   });
