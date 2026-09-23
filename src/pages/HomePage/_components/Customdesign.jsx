@@ -45,8 +45,11 @@ const CustomDesign = () => {
   const [saveFormData, setSaveFormData] = useState({
     name: '',
     description: '',
-    preset: 'preset1'
+    preset: 1 // ช่องเซฟ 1-5 (user มีได้สูงสุด 5 ช่อ)
   });
+  /* preset ที่เลือกมีช่ออื่นอยู่แล้ว (backend ตอบ 409 PRESET_TAKEN) → { preset, name } ใช้โชว์คำเตือน + ให้กดยืนยันเซฟทับ
+     null = ยังไม่ชน / เปลี่ยน preset แล้ว */
+  const [presetConflict, setPresetConflict] = useState(null);
   const [isCartPopupOpen, setIsCartPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,34 +68,39 @@ const CustomDesign = () => {
     const fetchInventory = async () => {
       setIsLoading(true);
       try {
-        // [BACKEND TODO]: ดึงข้อมูลจาก MongoDB Collection 'inventory_items'
-        
-        // Mockup ข้อมูลที่อิงจาก productquery.mongodb.js
+        // [INVENTORY TODO]: ตอนนี้ยัง hardcode รายการไว้ชั่วคราว (เลือกมาแค่บางส่วน ใน DB มีดอกไม้ 18 ชนิด)
+        // id ด้านล่างเป็น _id จริงที่ copy มาจาก MongoDB collection 'inventory_items' (DB FlowerShop)
+        // ⚠️ seed (productquery.mongodb.js) ลบข้อมูลแล้วสร้าง _id ใหม่แบบสุ่มทุกครั้งที่รัน ถ้ามีคน seed ใหม่ id พวกนี้จะใช้ไม่ได้ แล้ว Save จะ error
+        // คนที่ทำ inventory: ทำ GET /api/v1/inventory-items (ตอนนี้ inventory-items.routes.js ยังว่าง) แล้วเปลี่ยนตรงนี้เป็น fetch จาก API
+        //   - bases = category 'wrapping_paper' + 'vase', flowers = category 'flower'
+        //   - ใช้ _id ของแต่ละ item เป็น id ของ dropdown
+        //   - ค่า default ใน setSelections ด้านล่างก็ต้องเอามาจากข้อมูลที่ fetch ได้ (เช่น item ตัวแรกของแต่ละกลุ่ม)
         setTimeout(() => {
           setInventory({
             // Bases: รวม wrapping_paper และ vase
             bases: [
-              { id: 'inv02', name: 'Kraft Wrapping Paper (Brown)' },
-              { id: 'inv04', name: 'Korean Wrapping Paper (Cream)' },
-              { id: 'inv09', name: 'Satin Ribbon (Ivory)' },
-              { id: 'inv10', name: 'Tall Glass Vase (Clear)' }
+              { id: '6ab0ef63fb9b2838d7c38a2f', name: 'Kraft Wrapping Paper' },
+              { id: '6ab0ef63fb9b2838d7c38a31', name: 'Korean Wrapping Paper' },
+              { id: '6ab0ef63fb9b2838d7c38a36', name: 'Satin Ribbon' },
+              { id: '6ab0ef63fb9b2838d7c38a37', name: 'Tall Glass Vase' }
             ],
             // Flowers: category 'flower'
             flowers: [
-              { id: 'inv01', name: 'Ecuadorian Red Rose' },
-              { id: 'inv03', name: 'Pink Tulip' },
-              { id: 'inv06', name: 'Sunflower' },
-              { id: 'inv07', name: 'Blue Hydrangea' },
-              { id: 'inv11', name: "Baby's Breath" }
+              { id: '6ab0ef63fb9b2838d7c38a2e', name: 'Ecuadorian Red Rose' },
+              { id: '6ab0ef63fb9b2838d7c38a30', name: 'Pink Tulip' },
+              { id: '6ab0ef63fb9b2838d7c38a33', name: 'Sunflower' },
+              { id: '6ab0ef63fb9b2838d7c38a34', name: 'Blue Hydrangea' },
+              { id: '6ab0ef63fb9b2838d7c38a38', name: "Baby's Breath" }
             ]
           });
-          
+
           // ตั้งค่า Default ตอนโหลดหน้าเว็บเสร็จ
-          setSelections({ 
-            baseId: 'inv02', 
-            flower1Id: 'inv01', flower1Qty: 1,
-            flower2Id: 'inv06', flower2Qty: 1,
-            flower3Id: 'inv03', flower3Qty: 1
+          // ถ้ามาจากปุ่ม edit แล้ว design เดิมโหลดเสร็จก่อน (prev.baseId มีค่าแล้ว) ห้ามเขียนทับ ไม่งั้น dropdown จะเด้งกลับเป็นค่า default
+          setSelections((prev) => prev.baseId ? prev : {
+            baseId: '6ab0ef63fb9b2838d7c38a2f', // Kraft Wrapping Paper
+            flower1Id: '6ab0ef63fb9b2838d7c38a2e', flower1Qty: 1, // Ecuadorian Red Rose
+            flower2Id: '6ab0ef63fb9b2838d7c38a33', flower2Qty: 1, // Sunflower
+            flower3Id: '6ab0ef63fb9b2838d7c38a30', flower3Qty: 1  // Pink Tulip
           });
           setIsLoading(false);
         }, 800);
@@ -133,6 +141,7 @@ const CustomDesign = () => {
           ...prev,
           name: design.design_name || '',
           description: design.design_description || '',
+          preset: design.preset || 1,
         }));
       } catch (error) {
         console.error("Failed to load design for editing", error);
@@ -183,6 +192,9 @@ const CustomDesign = () => {
     const payload = {
       design_name: saveFormData.name,
       design_description: saveFormData.description,
+      preset: saveFormData.preset,
+      // กดครั้งแรกแล้วชน → โชว์คำเตือน กดอีกครั้ง (preset เดิม) = ยืนยันเซฟทับ
+      overwrite: presetConflict?.preset === saveFormData.preset,
       components: selectionsToComponents(selections),
     };
 
@@ -195,8 +207,14 @@ const CustomDesign = () => {
       }
 
       setIsModalOpen(false);
-      setSaveFormData({ name: '', description: '', preset: 'preset1' });
+      setSaveFormData({ name: '', description: '', preset: 1 });
+      setPresetConflict(null);
     } catch (error) {
+      // preset ชน: ไม่ใช่ error จริง ให้โชว์คำเตือนแล้วรอผู้ใช้ยืนยัน (หรือเปลี่ยน preset)
+      if (error.code === 'PRESET_TAKEN') {
+        setPresetConflict({ preset: saveFormData.preset, name: error.data?.existing_design_name });
+        return;
+      }
       console.error("Failed to save custom design", error);
       setSaveError(error.message || "Save failed. Please try again.");
     } finally {
@@ -364,7 +382,10 @@ const CustomDesign = () => {
               Add to Cart
             </button>
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setPresetConflict(null); // เปิด modal ใหม่ เริ่มจากยังไม่ชน preset
+                setIsModalOpen(true);
+              }}
               className="px-8 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all cursor-pointer"
             >
               Save
@@ -455,13 +476,15 @@ const CustomDesign = () => {
                   <select 
                     className="w-full bg-base-100 border border-[#E5E0DA] rounded-xl px-4 py-2.5 appearance-none text-neutral focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                     value={saveFormData.preset}
-                    onChange={(e) => setSaveFormData({...saveFormData, preset: e.target.value})}
+                    onChange={(e) => {
+                      // ค่าจาก <select> เป็น string เสมอ แปลงเป็นเลขก่อน backend รับแค่ 1-5 แบบ number
+                      setSaveFormData({...saveFormData, preset: Number(e.target.value)});
+                      setPresetConflict(null);
+                    }}
                   >
-                    <option value="preset1">Preset 1</option>
-                    <option value="preset2">Preset 2</option>
-                    <option value="preset3">Preset 3</option>
-                    <option value="preset4">Preset 4</option>
-                    <option value="preset5">Preset 5</option>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>Preset {n}</option>
+                    ))}
                   </select>
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                      <svg className="w-4 h-4 text-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -470,6 +493,13 @@ const CustomDesign = () => {
                   </div>
                 </div>
               </div>
+              {presetConflict && (
+                <p className="text-center text-sm text-amber-700">
+                  Preset {presetConflict.preset} already has "{presetConflict.name}".
+                  Saving will replace it and the old bouquet will be deleted.
+                  Choose another preset to keep it.
+                </p>
+              )}
               {saveError && (
                 <p className="text-center text-sm text-red-600">{saveError}</p>
               )}
@@ -481,7 +511,9 @@ const CustomDesign = () => {
                 >
                   {isSaving
                     ? 'Saving...'
-                    : editingDesignId
+                    : presetConflict
+                      ? `Replace Preset ${presetConflict.preset}`
+                      : editingDesignId
                       ? 'Save Changes'
                       : 'Confirm Save'}
                 </button>
