@@ -6,25 +6,24 @@ const PAGE_SIZE = 6;
 
 const api_url = import.meta.env.VITE_API_URL;
 
-export default function PopShopBlog({ 
-  formatBlogDate = (date) => date || "", 
-  formatCategory = (category) => category || "" 
+export default function PopShopBlog({
+  formatBlogDate = (date) => date || "",
+  formatCategory = (category) => category || "",
 }) {
-
   const [blogs, setBlogs] = useState([]);
-  
-    useEffect(() => {
-      async function fetchBlogs() {
-        try {
-          const response = await fetch(`${api_url}/api/v1/blog`);
-          const data = await response.json();
-          setBlogs(data);
-        } catch (err) {
-          setError("โหลดข้อมูลไม่สำเร็จ ลองเช็คว่า server รันอยู่หรือเปล่า");
-        }
+
+  useEffect(() => {
+    async function fetchBlogs() {
+      try {
+        const response = await fetch(`${api_url}/blog`);
+        const data = await response.json();
+        setBlogs(data);
+      } catch (err) {
+        setError("โหลดข้อมูลไม่สำเร็จ ลองเช็คว่า server รันอยู่หรือเปล่า");
       }
-      fetchBlogs();
-    }, []);
+    }
+    fetchBlogs();
+  }, []);
 
   const publishedBlogs = [...blogs]
     .filter((blog) => blog.status === "published")
@@ -32,14 +31,17 @@ export default function PopShopBlog({
 
   const popBlogs = useMemo(
     () => publishedBlogs.filter((blog) => blog.is_popular).slice(0, 3),
-    [publishedBlogs]
+    [publishedBlogs],
   );
   const allBlogs = publishedBlogs;
 
   const pageCount = Math.max(1, Math.ceil(allBlogs.length / PAGE_SIZE));
   const [page, setPage] = useState(0);
   const goTo = (n) => setPage(Math.min(pageCount - 1, Math.max(0, n)));
-  const pageBlogs = allBlogs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  const pageBlogs = allBlogs.slice(
+    page * PAGE_SIZE,
+    page * PAGE_SIZE + PAGE_SIZE,
+  );
 
   // All Blog จะโผล่ออกมาเมื่อกด "View all blog"
   const [isAllBlog, setIsAllBlog] = useState(false);

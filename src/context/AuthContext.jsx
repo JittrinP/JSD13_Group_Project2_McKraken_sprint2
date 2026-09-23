@@ -1,72 +1,78 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import mockUser from "../assets/mockData/mockUser";
+import axios from "axios";
 
-// วิธีใช้ในหน้าอื่นๆ:
-// import { useAuth } from "../context/AuthContext";
-// const { user, isLoggedIn, users, login, logout, register, resetPassword } = useAuth();
+// 1. สร้าง Instance ของ Axios เพื่อตั้งค่าให้แนบ Cookie อัตโนมัติ
+export const api = axios.create({
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    "https://mckraken-sprint3-backend.onrender.com/api/v1", // เปลี่ยนเป็น Port Backend ของคุณ
+  withCredentials: true, // ถ้าไม่เปิดตัวนี้ Cookie จะไม่ถูกส่งไป Backend
+});
 
 const AuthContext = createContext(null);
-const STORAGE_KEY = "auth_user";
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(null);
+  const [isAppLoading, setIsAppLoading] = useState(true);
 
-  // "users" คือรายชื่อ account ทั้งหมดที่ระบบรู้จัก (mock ไว้ก่อน + คนที่สมัครใหม่ระหว่าง session นี้)
-  // ตั้งใจไม่ persist ลง localStorage (B-lite) — refresh แล้ว user ที่เพิ่งสมัครจะหายไป รอวันต่อ MongoDB backend จริงค่อยเปลี่ยนเป็น fetch แทน — Albert
-  const [users, setUsers] = useState(mockUser);
-
+  // มื่อผู้ใช้เปิดเว็บขึ้นมา ให้ยิงไปถาม Backend ทันทีว่ามี Cookie / ล็อกอินอยู่ไหม
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    const fetchMe = async () => {
+      try {
+        const response = await api.get("/auth/me");
+        setUser(response.data.user);
+      } catch (error) {
+        // ถ้าไม่มี Cookie, หมดอายุ หรือยังไม่ล็อกอิน Backend จะส่ง Error กลับมา
+        setUser(null);
+      } finally {
+        setIsAppLoading(false); // โหลดเสร็จแล้ว ปิดหน้าจอโหลด
+      }
+    };
+
+    fetchMe();
+  }, []);
+
+  // ฟังก์ชัน Login (จะถูกเรียกใช้ในหน้า LoginPage)
+  async function login(email, password) {
+    // ยิง API ไปหา Backend
+    const response = await api.post("/auth/login", { email, password });
+    // ถ้าสำเร็จ Backend จะฝัง Cookie ให้เบราว์เซอร์อัตโนมัติ
+    // เราแค่เอาข้อมูล Profile มาเก็บลง State
+    setUser(response.data.user);
+    return response.data;
+  }
+
+  // ฟังก์ชัน Logout (จะถูกเรียกใช้ใน Header หรือปุ่ม Logout)
+  async function logout() {
+    try {
+      await api.post("/auth/logout");
+      setUser(null); // ล้าง State User
+    } catch (error) {
+      console.error("Logout failed", error);
     }
-  }, [user]);
-
-  function login(userData) {
-    setUser(userData);
   }
 
-  function logout() {
-    setUser(null);
-  }
-
-  function register(newUser) {
-    setUsers((prev) => [...prev, newUser]);
-  }
-
-  // ใช้กับ flow "ลืมรหัสผ่าน" — ถ้าไม่เจอ email ที่ตรงกันเลย จะไม่ทำอะไร (เงียบๆ)
-  // ตั้งใจไม่บอกว่า email มีอยู่จริงไหม เพื่อไม่ leak ข้อมูลว่า email นี้สมัครไว้หรือเปล่า — Albert
-  function resetPassword(email, newPasswordHash) {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.email.toLowerCase() === email.toLowerCase()
-          ? { ...u, password_hash: newPasswordHash }
-          : u,
-      ),
-    );
-  }
+  // ไม่ต้องใช้ mockUser และไม่ส่งฟังก์ชัน register/resetPassword เข้า Context แล้ว
+  // เพราะฟังก์ชันพวกนั้นไม่ต้องเก็บ State ส่วนกลาง (ให้ยิง API ตรงๆ จากหน้าเพจเลย)
 
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoggedIn: !!user,
-        users,
+        isAppLoading,
         login,
         logout,
-        register,
-        resetPassword,
       }}
     >
-      {children}
+      {/* ถ้ากำลังเช็ค /me อยู่ ให้แอบ render หน้าจอเปล่าๆ หรือ Loading Spinner ไปก่อน */}
+      {isAppLoading ? (
+        <div className="flex h-screen items-center justify-center">
+          Loading...
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }

@@ -31,7 +31,7 @@ export default function ShopBlogPage() {
   useEffect(() => {
     async function fetchBlogs() {
       try {
-        const response = await fetch(`${api_url}/api/v1/blog`);
+        const response = await fetch(`${api_url}/blog`);
         const data = await response.json();
         setBlogs(data);
       } catch (err) {

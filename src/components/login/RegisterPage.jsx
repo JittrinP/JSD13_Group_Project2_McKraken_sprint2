@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Flower2, X, Eye, EyeOff } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+// Import ตัวแปร api ออกมาจากไฟล์ AuthContext
+import { api } from "../../context/AuthContext";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
-  const { users, register } = useAuth(); // ใช้ users/register แทน mockUser+login ตรงๆ เพราะไม่ auto-login แล้ว (B-lite) — Albert
+  // ไม่ต้องเรียก useAuth() แล้ว ลบบรรทัด const { users, register } = useAuth(); ทิ้งได้เลย
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,6 +16,7 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -27,47 +30,46 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
     setShowPassword(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // เช็ค Validation พื้นฐานฝั่งหน้าบ้านก่อน (เหมือนเดิม)
     if (!EMAIL_PATTERN.test(email)) {
       setError("Please enter a valid email address.");
       return;
     }
-
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
-
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
-    if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      setError("This email is already registered.");
-      return;
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // ยิง API ไปสร้าง User ที่ Backend
+      await api.post("/auth/register", {
+        firstName,
+        lastName,
+        email,
+        password,
+      });
+
+      // ถ้าสำเร็จ ล้างฟอร์มแล้วสลับไปหน้า Login
+      resetForm();
+      onSwitchToLogin?.();
+    } catch (err) {
+      // ถ้าอีเมลซ้ำ หรือมี Error อื่นๆ ให้แสดงข้อความ
+      const backendErrorMessage =
+        err.response?.data?.message || "Registration failed. Please try again.";
+      setError(backendErrorMessage);
+    } finally {
+      setIsLoading(false);
     }
-
-    // B-lite: เก็บ user ใหม่ไว้ใน memory ของ AuthContext เท่านั้น (หายเมื่อ refresh) ไม่ auto-login
-    // ของจริงตอนต่อ MongoDB backend: จุดนี้จะเปลี่ยนเป็น POST ไปสร้าง user จริง — Albert
-    const newUser = {
-      _id: `u${Date.now()}`,
-      email,
-      password_hash: password,
-      phone_number: "",
-      role: "customer",
-      status: "active",
-      created_at: new Date().toISOString(),
-      delete_at: null,
-      profile: { first_name: firstName, last_name: lastName, gender: "" },
-      shipping_addresses: [],
-    };
-
-    register(newUser);
-    resetForm();
-    onSwitchToLogin?.(); // สมัครเสร็จแล้วพาไปหน้า Login ให้กรอกเองแทนการ login อัตโนมัติ — Albert
   };
 
   return (
@@ -101,7 +103,10 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-5 flex w-full flex-col gap-4 md:mt-6">
+        <form
+          onSubmit={handleSubmit}
+          className="mt-5 flex w-full flex-col gap-4 md:mt-6"
+        >
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex flex-1 flex-col gap-1">
               <label
@@ -210,7 +215,9 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
           </div>
 
           {error && (
-            <p className="w-full text-center font-body text-sm text-red-600">{error}</p>
+            <p className="w-full text-center font-body text-sm text-red-600">
+              {error}
+            </p>
           )}
 
           <button
@@ -228,7 +235,7 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
             onClick={onSwitchToLogin}
             className="font-semibold underline"
           >
-            Sign in
+            {isLoading ? "Signing in..." : "Sign in"}
           </button>
         </p>
       </div>
