@@ -50,7 +50,7 @@ export default function CheckoutPage() {
       const res = await fetch(`${API_BASE}/payments/create-intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: grandTotal }), // ส่งยอดรวมทั้งหมดไปให้ Stripe สร้าง PaymentIntent
+        body: JSON.stringify({ amount: grandTotal, email: user?.email }), // ส่งยอดรวม + email ผู้ใช้จริงไปให้ Stripe สร้าง PaymentIntent
       });
       const data = await res.json();
       if (!data.success) return; // ยิงไม่สำเร็จก็แค่หยุดเงียบๆ ไปก่อน (ยังไม่ต้องทำ error UI ในรอบนี้)

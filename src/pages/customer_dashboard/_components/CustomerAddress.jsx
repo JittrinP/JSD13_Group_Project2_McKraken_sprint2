@@ -1,63 +1,33 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth, api } from "../../../context/AuthContext";
 
 // ==========================================
-// API HELPERS (ยิงไปหา backend จริงที่ /api/v1/user/:userId/address)
-// ยังไม่ถูกเรียกใช้ตรงไหนตอนนี้ แค่เขียนเตรียมไว้ก่อน (Step 1)
+// API HELPERS (ยิงไปหา backend จริงที่ /api/v1/user/address ผ่าน `api` instance
+// ของ AuthContext — แนบ cookie อัตโนมัติ, userId มาจาก token ฝั่ง backend เอง)
 // ==========================================
 
-const API_BASE = import.meta.env.VITE_API_URL;
-
-// ดึงที่อยู่ทั้งหมดของ user คนนั้น (GET)
-async function getAddresses(userId) {
-  const res = await fetch(`${API_BASE}/user/${userId}/address`);
-  if (!res.ok) {
-    throw new Error("Failed to fetch addresses");
-  }
-  return res.json(); // ได้ array ของที่อยู่กลับมาตรงๆ
+// ดึงที่อยู่ทั้งหมดของ user ที่ login อยู่ (GET)
+async function getAddresses() {
+  const res = await api.get("/user/address");
+  return res.data; // ได้ array ของที่อยู่กลับมาตรงๆ
 }
 
 // เพิ่มที่อยู่ใหม่ 1 รายการ (POST)
-async function addAddress(userId, addressData) {
-  const res = await fetch(`${API_BASE}/user/${userId}/address`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(addressData),
-  });
-  if (!res.ok) {
-    throw new Error("Failed to add address");
-  }
-  const data = await res.json();
-  return data.newAddress;
+async function addAddress(addressData) {
+  const res = await api.post("/user/address", addressData);
+  return res.data.newAddress;
 }
 
 // แก้ไขที่อยู่ 1 รายการ (PATCH) — addressData ส่งแค่ field ที่อยากแก้ก็ได้
-async function updateAddress(userId, addressId, addressData) {
-  const res = await fetch(
-    `${API_BASE}/user/${userId}/address/${addressId}`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(addressData),
-    },
-  );
-  if (!res.ok) {
-    throw new Error("Failed to update address");
-  }
-  const data = await res.json();
-  return data.updatedAddress;
+async function updateAddress(addressId, addressData) {
+  const res = await api.patch(`/user/address/${addressId}`, addressData);
+  return res.data.updatedAddress;
 }
 
 // ลบที่อยู่ 1 รายการ (DELETE)
-async function deleteAddress(userId, addressId) {
-  const res = await fetch(
-    `${API_BASE}/user/${userId}/address/${addressId}`,
-    { method: "DELETE" },
-  );
-  if (!res.ok) {
-    throw new Error("Failed to delete address");
-  }
-  return res.json();
+async function deleteAddress(addressId) {
+  const res = await api.delete(`/user/address/${addressId}`);
+  return res.data;
 }
 
 // แปลง address object จาก backend (recipient_name, address, sub_district, ...) ให้เป็นรูปแบบที่ component นี้ใช้ (name, addressLine, subDistrict, ...)
@@ -118,15 +88,15 @@ export default function CustomerAddress() {
   // 1b. โหลดที่อยู่จาก API ตอน component เปิดขึ้นมาครั้งแรก (หรือตอน currentUser เปลี่ยน เช่น login ใหม่)
   // ==========================================
   useEffect(() => {
-    // ยังไม่ล็อกอิน ไม่มี id ให้ยิง API เลยข้ามไปก่อน
-    if (!currentUser?._id) return;
+    // ยังไม่ล็อกอิน ไม่มี session ให้ยิง API เลยข้ามไปก่อน
+    if (!currentUser) return;
 
-    getAddresses(currentUser._id)
+    getAddresses()
       .then((data) => {
         setAddresses(mapAndSortAddresses(data));
       })
       .catch((err) => console.error(err));
-  }, [currentUser?._id]);
+  }, [currentUser]);
 
   // ==========================================
   // 2. MODAL CONTROLLERS (เพิ่ม/แก้ไข ที่อยู่)
@@ -187,8 +157,8 @@ export default function CustomerAddress() {
     // Step 5: ลบที่อยู่ผ่าน API จริง แทนการ filter local state เอง
     if (deletingTarget) {
       try {
-        await deleteAddress(currentUser._id, deletingTarget.id);
-        const data = await getAddresses(currentUser._id);
+        await deleteAddress(deletingTarget.id);
+        const data = await getAddresses();
         setAddresses(mapAndSortAddresses(data));
       } catch (err) {
         console.error(err);
@@ -213,7 +183,7 @@ export default function CustomerAddress() {
     if (editingAddressId) {
       // Step 4: แก้ไขที่อยู่ผ่าน API จริง แทนการแก้ local state เอง (ฟอร์ม edit ไม่มีช่อง is_default เลยไม่ต้องส่ง)
       try {
-        await updateAddress(currentUser._id, editingAddressId, {
+        await updateAddress(editingAddressId, {
           recipient_name: formData.name,
           phone: formData.phone,
           address: formData.addressLine,
@@ -223,7 +193,7 @@ export default function CustomerAddress() {
           postal_code: formData.postalCode,
         });
 
-        const data = await getAddresses(currentUser._id);
+        const data = await getAddresses();
         setAddresses(mapAndSortAddresses(data));
       } catch (err) {
         console.error(err);
@@ -233,7 +203,7 @@ export default function CustomerAddress() {
     } else {
       // Step 3: เพิ่มที่อยู่ใหม่ผ่าน API จริง แทนการสร้าง object ปลอมเก็บไว้ใน local state
       try {
-        await addAddress(currentUser._id, {
+        await addAddress({
           recipient_name: formData.name,
           phone: formData.phone,
           address: formData.addressLine,
@@ -245,7 +215,7 @@ export default function CustomerAddress() {
         });
 
         // ดึงรายการที่อยู่ล่าสุดจาก backend มาแทนของเดิมทั้งหมด กันข้อมูลไม่ตรงกัน (เช่น is_default ของรายการอื่นที่อาจถูกปิดไปพร้อมกัน)
-        const data = await getAddresses(currentUser._id);
+        const data = await getAddresses();
         setAddresses(mapAndSortAddresses(data));
       } catch (err) {
         console.error(err);
@@ -259,8 +229,8 @@ export default function CustomerAddress() {
   const handleMakeDefault = async (id) => {
     // Step 6: ตั้งที่อยู่หลักผ่าน API จริง — backend มี logic ปิด is_default ของรายการอื่นให้อัตโนมัติอยู่แล้ว (ทดสอบผ่านตอนทำ PATCH)
     try {
-      await updateAddress(currentUser._id, id, { is_default: true });
-      const data = await getAddresses(currentUser._id);
+      await updateAddress(id, { is_default: true });
+      const data = await getAddresses();
       setAddresses(mapAndSortAddresses(data));
     } catch (err) {
       console.error(err);
