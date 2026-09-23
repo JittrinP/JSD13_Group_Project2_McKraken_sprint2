@@ -6,6 +6,7 @@ import { api } from "../../context/AuthContext";
 export default function ForgetPassword({ isOpen, onClose, onCodeSent }) {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
