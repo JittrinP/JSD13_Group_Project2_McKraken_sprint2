@@ -17,25 +17,25 @@ export function AuthProvider({ children }) {
 
   // เมื่อผู้ใช้เปิดเว็บขึ้นมา ให้ยิงไปถาม Backend ทันทีว่ามี Cookie / ล็อกอินอยู่ไหม
   useEffect(() => {
-    // --- ส่วนที่เพิ่มเข้ามา: Axios Interceptor สำหรับดัก 401 และ Auto-Refresh Token ---
     const responseInterceptor = api.interceptors.response.use(
-      (response) => response, // ถ้า Status 200 ปกติ ปล่อยผ่าน
+      (response) => response,
       async (error) => {
         const originalRequest = error.config;
 
-        // ถ้า Backend ตอบ 401 (Token หมดอายุ) และยังไม่ได้พยายามยิงซ้ำ (_retry)
+        // 🚨 1. จุดแก้ลูปนรก: ถ้า URL ที่ยิงไปคือ /auth/refresh แล้วพัง ให้หยุดทันที!
+        if (originalRequest.url.includes("/auth/refresh")) {
+          setUser(null);
+          return Promise.reject(error);
+        }
+
+        // 2. ถ้าเป็นเส้นทางอื่นพังด้วย 401 และยังไม่ได้ลอง retry
         if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true; // ทำเครื่องหมายว่ากำลัง retry จะได้ไม่เกิดลูปอนันต์
+          originalRequest._retry = true;
 
           try {
-            // แอบยิง API ไปขอ Access Token ใบใหม่จาก Backend
             await api.post("/auth/refresh");
-
-            // ถ้าสำเร็จ ให้เอา Request เดิม (ที่เคยเฟลตอนแรก) กลับไปยิงซ้ำอัตโนมัติ
             return api(originalRequest);
           } catch (refreshError) {
-            // ถ้ามาตกตรงนี้แปลว่า Refresh Token ก็หมดอายุด้วย (เช่น ไม่ได้เข้านาน 7 วัน)
-            // ให้ลบ user ออกเพื่อเตะกลับไปหน้า Login
             setUser(null);
             return Promise.reject(refreshError);
           }
