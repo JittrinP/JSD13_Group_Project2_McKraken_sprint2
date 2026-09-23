@@ -1,10 +1,30 @@
-import mockProducts from "../assets/mockData/mockProducts";
+import { useEffect, useState } from "react";
+import { getProducts } from "../lib/productApi";
 import ProductCard from "./ProductCard";
 
 export default function PopularProducts() {
-  const popularList = mockProducts.filter(
-    (product) => product.is_popular && product.is_active,
-  );
+  // เก็บเฉพาะ popular products จาก backend แทนการอ่าน mock data ใน frontend
+  const [popularList, setPopularList] = useState([]);
+
+  useEffect(() => {
+    // ยกเลิก request เมื่อออกจากหน้า เพื่อไม่ให้ set state หลัง component ถูกถอด
+    const controller = new AbortController();
+
+    // backend กรอง active products เป็นค่าเริ่มต้นและเรียง popular/sales ให้แล้ว
+    getProducts({ is_popular: "true" }, controller.signal)
+      .then((products) => {
+        // หน้า Home แสดง curated collection สูงสุด 3 รายการเหมือนรูปแบบเดิม
+        setPopularList(products.slice(0, 3));
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          // หากโหลดไม่ได้ ให้แสดงพื้นที่ว่างแทนการทำให้หน้า Home ล้มทั้งหน้า
+          setPopularList([]);
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
 
   return (
     <section className="w-full">
