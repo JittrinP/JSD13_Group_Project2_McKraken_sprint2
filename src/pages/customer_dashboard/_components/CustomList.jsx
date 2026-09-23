@@ -1,22 +1,43 @@
-import mockCustom from "../../../assets/mockData/mockCustom";
-import mockInventory from "../../../assets/mockData/mockInventory";
 import { SquarePen, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getDesigns, deleteDesign } from "../../../lib/customDesignApi";
 
 export default function CustomList() {
   const navigate = useNavigate();
-  // หาข้อมูล inventory 1 รายการจาก _id (mockCustom เก็บมาแค่ id)
-  const [customList, setCustomList] = useState(mockCustom);
-  const findInv = (id) => mockInventory.find((inv) => inv._id === id);
+  const [customList, setCustomList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // โหลด saved design ทั้งหมดของ user ที่ login อยู่ตอน component เปิดขึ้นมาครั้งแรก
+  useEffect(() => {
+    const loadDesigns = async () => {
+      try {
+        const data = await getDesigns();
+        setCustomList(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load your saved bouquets.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadDesigns();
+  }, []);
 
   //สร้าง edit handler ให้ไปที่ส่วนที่ path / (Home) แล้วเราจะส่ง
   const editHandler = (id) => {
     navigate(`/?edit=${id}#customDesign`);
   };
-  //สร้าง delete handler
-  const deleteHandler = (id) => {
-    setCustomList((prev) => prev.filter((d) => d._id !== id));
+  //สร้าง delete handler — ลบผ่าน API จริงก่อน สำเร็จแล้วค่อยตัดออกจาก local state
+  const deleteHandler = async (id) => {
+    try {
+      await deleteDesign(id);
+      setCustomList((prev) => prev.filter((d) => d._id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("ลบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    }
   };
   return (
     <>
@@ -24,7 +45,13 @@ export default function CustomList() {
         {/* หัวข้อ */}
         <h2 className="font-display text-2xl font-bold ">Bouquet</h2>
 
-        {/* Mobile first: card เรียงลงมา / lg ขึ้นไปรวมเป็นกล่องตารางเดียว */}
+        {isLoading ? (
+          <p className="mt-4 text-sm text-neutral/60">Loading your bouquets...</p>
+        ) : error ? (
+          <p className="mt-4 text-sm text-red-600">{error}</p>
+        ) : customList.length === 0 ? (
+          <p className="mt-4 text-sm text-neutral/60">You haven't saved any custom bouquets yet.</p>
+        ) : (
         <div className="mt-4 flex flex-col gap-6 lg:m-4 lg:gap-0 lg:max-h-125 lg:overflow-auto lg:rounded-2xl lg:border lg:border-[#929B91]/30 lg:bg-background">
           {/* หัวตาราง: แสดงเฉพาะ lg ขึ้นไป */}
           <div className="hidden lg:grid grid-cols-9 font-body p-2 border-b border-[#929B91]/30">
@@ -57,10 +84,11 @@ export default function CustomList() {
                 {/* Detail ใส่บูลเล็ทโดยใส่ class ไปเพราะว่า tailwind มันลบออกหมดเลย */}
                 <ul className="list-disc list-inside text-sm lg:col-span-3 lg:text-base">
                   {design.components.map((item) => {
-                    const inv = findInv(item.inventory_item_id);
+                    // backend populate ให้แล้ว inventory_item_id เลยเป็น object { _id, name, ... } ไม่ใช่แค่ id string
+                    const inv = item.inventory_item_id;
                     return (
-                      <li key={item.inventory_item_id}>
-                        {`${inv ? inv.name : `ไม่พบสินค้า ${item.inventory_item_id}`} x ${item.quantity}`}
+                      <li key={item._id}>
+                        {`${inv?.name || "ไม่พบสินค้า"} x ${item.quantity}`}
                       </li>
                     );
                   })}
@@ -90,6 +118,7 @@ export default function CustomList() {
             </div>
           ))}
         </div>
+        )}
       </div>
     </>
   );
