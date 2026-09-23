@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import OrderConfirmed from "../components/OrderConfirmed";
+import PaymentQRModal from "../components/PaymentQRModal"; // popup โชว์ QR PromptPay ตอนกด Confirmed Order
 
 import qrcode from "../assets/images/payment-qrcode.svg";
 import alipay from "../assets/images/payment-alipay.svg";
@@ -11,6 +12,8 @@ import mastercard from "../assets/images/payment-mastercard.svg";
 import visa from "../assets/images/payment-visa.svg";
 import unionpay from "../assets/images/payment-unionpay.svg";
 const paymentMethods = [qrcode, alipay, jcb, mastercard, visa, unionpay];
+
+const API_BASE = import.meta.env.VITE_API_URL; // ที่อยู่ backend อ่านจากไฟล์ .env
 
 function formatPrice(value) {
   return `$${Number(value).toFixed(2)}`;
@@ -21,6 +24,8 @@ export default function CheckoutPage() {
   const { items, giftNote, placeOrder } = useCart();
   const { user, isLoggedIn } = useAuth();
   const [showConfirmed, setShowConfirmed] = useState(false);
+  const [qrData, setQrData] = useState(null); // เก็บ { id, qrImageUrl } ที่ได้จาก backend หลังสร้าง PaymentIntent
+  const [showQR, setShowQR] = useState(false); // true = กำลังโชว์ modal QR อยู่
 
   const defaultAddress = user?.shipping_addresses?.find(
     (address) => address.is_default,
@@ -37,15 +42,35 @@ export default function CheckoutPage() {
   const serviceFee = 0;
   const grandTotal = subTotal + deliveryFee + serviceFee;
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    // กดปุ่ม Confirmed Order แล้ว "ยัง" ไม่ถือว่า order สำเร็จ ต้องรอจ่ายเงินผ่านก่อน (ดู handlePaymentSuccess ด้านล่าง)
     if (!isLoggedIn || !deliveryAddress) return;
 
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/payments/create-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: grandTotal }), // ส่งยอดรวมทั้งหมดไปให้ Stripe สร้าง PaymentIntent
+      });
+      const data = await res.json();
+      if (!data.success) return; // ยิงไม่สำเร็จก็แค่หยุดเงียบๆ ไปก่อน (ยังไม่ต้องทำ error UI ในรอบนี้)
+
+      setQrData({ id: data.id, qrImageUrl: data.qrImageUrl }); // เก็บ id + รูป QR ไว้ส่งต่อให้ modal
+      setShowQR(true); // เปิด modal โชว์ QR
+    } catch (err) {
+      console.error("Failed to create payment intent", err);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    // ฟังก์ชันนี้จะถูกเรียกจาก PaymentQRModal ก็ต่อเมื่อ poll เจอสถานะ "succeeded" แล้วเท่านั้น
     placeOrder({
       deliveryAddress,
       serviceFee,
       deliveryFee,
-    });
-    setShowConfirmed(true);
+    }); // ค่อย place order จริงตอนนี้ (ของเดิมเคย place ทันทีตอนกดปุ่ม ตอนนี้ต้องรอจ่ายเงินผ่านก่อน)
+    setShowQR(false); // ปิด modal QR
+    setShowConfirmed(true); // เปิดหน้า Order Confirmed ต่อ
   };
 
   if (items.length === 0 && !showConfirmed) {
@@ -189,6 +214,15 @@ export default function CheckoutPage() {
             >
               Confirmed Order
             </button>
+            {showQR && qrData && ( // โชว์ modal นี้เฉพาะตอนมี QR data แล้วเท่านั้น
+              <PaymentQRModal
+                qrImageUrl={qrData.qrImageUrl}
+                paymentIntentId={qrData.id}
+                amount={grandTotal} // โชว์ยอดที่ต้องจ่ายเหนือ QR ให้เช็คก่อนสแกน
+                onSuccess={handlePaymentSuccess} // จ่ายผ่านแล้ว -> ไป place order จริง
+                onCancel={() => setShowQR(false)} // กดปิดเอง -> แค่ปิด modal เฉยๆ
+              />
+            )}
             {showConfirmed && (
               <OrderConfirmed onClose={() => setShowConfirmed(false)} />
             )}
