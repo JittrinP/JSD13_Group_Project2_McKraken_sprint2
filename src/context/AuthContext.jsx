@@ -15,8 +15,37 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAppLoading, setIsAppLoading] = useState(true);
 
-  // มื่อผู้ใช้เปิดเว็บขึ้นมา ให้ยิงไปถาม Backend ทันทีว่ามี Cookie / ล็อกอินอยู่ไหม
+  // เมื่อผู้ใช้เปิดเว็บขึ้นมา ให้ยิงไปถาม Backend ทันทีว่ามี Cookie / ล็อกอินอยู่ไหม
   useEffect(() => {
+    // --- ส่วนที่เพิ่มเข้ามา: Axios Interceptor สำหรับดัก 401 และ Auto-Refresh Token ---
+    const responseInterceptor = api.interceptors.response.use(
+      (response) => response, // ถ้า Status 200 ปกติ ปล่อยผ่าน
+      async (error) => {
+        const originalRequest = error.config;
+
+        // ถ้า Backend ตอบ 401 (Token หมดอายุ) และยังไม่ได้พยายามยิงซ้ำ (_retry)
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true; // ทำเครื่องหมายว่ากำลัง retry จะได้ไม่เกิดลูปอนันต์
+
+          try {
+            // แอบยิง API ไปขอ Access Token ใบใหม่จาก Backend
+            await api.post("/auth/refresh");
+
+            // ถ้าสำเร็จ ให้เอา Request เดิม (ที่เคยเฟลตอนแรก) กลับไปยิงซ้ำอัตโนมัติ
+            return api(originalRequest);
+          } catch (refreshError) {
+            // ถ้ามาตกตรงนี้แปลว่า Refresh Token ก็หมดอายุด้วย (เช่น ไม่ได้เข้านาน 7 วัน)
+            // ให้ลบ user ออกเพื่อเตะกลับไปหน้า Login
+            setUser(null);
+            return Promise.reject(refreshError);
+          }
+        }
+
+        return Promise.reject(error);
+      },
+    );
+    // -------------------------------------------------------------------------
+
     const fetchMe = async () => {
       try {
         const response = await api.get("/auth/me");
@@ -30,6 +59,11 @@ export function AuthProvider({ children }) {
     };
 
     fetchMe();
+
+    // ล้างตัว Interceptor ทิ้งเมื่อ Component ถูกปิด เพื่อไม่ให้มันทำงานซ้อนกันหลายรอบ
+    return () => {
+      api.interceptors.response.eject(responseInterceptor);
+    };
   }, []);
 
   // ฟังก์ชัน Login (จะถูกเรียกใช้ในหน้า LoginPage)
