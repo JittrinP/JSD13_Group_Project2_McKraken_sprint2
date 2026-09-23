@@ -47,7 +47,7 @@ export default function CheckoutPage() {
     if (!isLoggedIn || !deliveryAddress) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/v1/payments/create-intent`, {
+      const res = await fetch(`${API_BASE}/payments/create-intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: grandTotal }), // ส่งยอดรวมทั้งหมดไปให้ Stripe สร้าง PaymentIntent

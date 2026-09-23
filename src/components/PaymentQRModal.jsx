@@ -24,7 +24,7 @@ export default function PaymentQRModal({
     const interval = setInterval(async () => {
       try {
         const res = await fetch(
-          `${API_BASE}/api/v1/payments/${paymentIntentId}/status`, // ถามสถานะการจ่ายรอบนี้จาก backend
+          `${API_BASE}/payments/${paymentIntentId}/status`, // ถามสถานะการจ่ายรอบนี้จาก backend
         );
         const data = await res.json();
 
