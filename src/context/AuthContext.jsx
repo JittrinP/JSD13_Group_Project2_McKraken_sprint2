@@ -46,9 +46,10 @@ export function AuthProvider({ children }) {
   async function logout() {
     try {
       await api.post("/auth/logout");
-      setUser(null); // ล้าง State User
     } catch (error) {
       console.error("Logout failed", error);
+    } finally {
+      setUser(null); // ล้าง State User
     }
   }
 
