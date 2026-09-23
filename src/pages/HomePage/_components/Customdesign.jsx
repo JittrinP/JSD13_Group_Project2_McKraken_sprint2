@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import '@google/model-viewer';
 import flowerModel from '../../../assets/flower.glb?url';
 import { createDesign, updateDesign, getDesign } from '../../../lib/customDesignApi';
+import { useCart } from '../../../context/CartContext';
 
 const CustomDesign = () => {
   // =========================================================================
@@ -58,6 +59,7 @@ const CustomDesign = () => {
   /* Edit mode: มาจากลิงก์ /?edit=<designId> ที่กดจาก CustomList.jsx
      มี id นี้ = กำลังแก้ design เดิม (PATCH), ไม่มี = สร้างใหม่ (POST) */
   const [searchParams, setSearchParams] = useSearchParams();
+  const { addBouquetToCart } = useCart();
   const editingDesignId = searchParams.get('edit');
 
   // =========================================================================
@@ -168,10 +170,13 @@ const CustomDesign = () => {
     setSelections(prev => ({ ...prev, [category]: value }));
   };
 
+  // ส่งช่อที่เลือกอยู่ตอนนี้ไปที่ตะกร้า (POST /api/v1/cart แบบ custom_product)
+  // ยังไม่ login → CartContext ขึ้น alert ให้ไป login และได้ false กลับมา / popup Success เปิดเฉพาะตอนเพิ่มสำเร็จจริง
   const handleAddToCart = async () => {
-    // [BACKEND TODO]: สร้าง POST /api/cart รอรับ Payload ก้อนนี้
-    console.log("Cart Payload:", selections);
-    setIsCartPopupOpen(true);
+    const added = await addBouquetToCart({
+      components: selectionsToComponents(selections),
+    });
+    if (added) setIsCartPopupOpen(true);
   };
 
   // แปลง selections (baseId, flower1Id/Qty, flower2Id/Qty, flower3Id/Qty) ให้เป็น components array ตามที่ backend ต้องการ
