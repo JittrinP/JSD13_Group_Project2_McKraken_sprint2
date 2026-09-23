@@ -23,5 +23,6 @@ export async function getProducts(params = {}, signal) {
     throw new Error("Unable to load products");
   }
 
-  return response.json();
+  const result = await response.json(); // แปลง response เป็น json
+  return result.data; // <--- คืนค่าเฉพาะตัว array สินค้าที่อยู่ในคีย์ data ออกไป
 }
