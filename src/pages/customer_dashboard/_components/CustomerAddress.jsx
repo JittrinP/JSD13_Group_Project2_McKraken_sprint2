@@ -10,7 +10,7 @@ const API_BASE = import.meta.env.VITE_API_URL;
 
 // ดึงที่อยู่ทั้งหมดของ user คนนั้น (GET)
 async function getAddresses(userId) {
-  const res = await fetch(`${API_BASE}/api/v1/user/${userId}/address`);
+  const res = await fetch(`${API_BASE}/user/${userId}/address`);
   if (!res.ok) {
     throw new Error("Failed to fetch addresses");
   }
@@ -19,7 +19,7 @@ async function getAddresses(userId) {
 
 // เพิ่มที่อยู่ใหม่ 1 รายการ (POST)
 async function addAddress(userId, addressData) {
-  const res = await fetch(`${API_BASE}/api/v1/user/${userId}/address`, {
+  const res = await fetch(`${API_BASE}/user/${userId}/address`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(addressData),
@@ -34,7 +34,7 @@ async function addAddress(userId, addressData) {
 // แก้ไขที่อยู่ 1 รายการ (PATCH) — addressData ส่งแค่ field ที่อยากแก้ก็ได้
 async function updateAddress(userId, addressId, addressData) {
   const res = await fetch(
-    `${API_BASE}/api/v1/user/${userId}/address/${addressId}`,
+    `${API_BASE}/user/${userId}/address/${addressId}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -51,7 +51,7 @@ async function updateAddress(userId, addressId, addressData) {
 // ลบที่อยู่ 1 รายการ (DELETE)
 async function deleteAddress(userId, addressId) {
   const res = await fetch(
-    `${API_BASE}/api/v1/user/${userId}/address/${addressId}`,
+    `${API_BASE}/user/${userId}/address/${addressId}`,
     { method: "DELETE" },
   );
   if (!res.ok) {
