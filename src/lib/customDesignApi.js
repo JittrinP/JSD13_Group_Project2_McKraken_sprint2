@@ -4,6 +4,16 @@
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
+// สร้าง Error ที่แนบ status + code จาก backend ไปด้วย
+// เช่น 409 + code "PRESET_TAKEN" = preset เลขนี้มีช่ออื่นอยู่แล้ว หน้า Customdesign ใช้เช็คเพื่อถามยืนยันเซฟทับ
+function apiError(res, data, fallbackMessage) {
+  const error = new Error(data.message || fallbackMessage);
+  error.status = res.status;
+  error.code = data.code;
+  error.data = data;
+  return error;
+}
+
 // ดึง saved design ทั้งหมดของ user ที่ login อยู่ (GET)
 export async function getDesigns() {
   const res = await fetch(`${API_BASE}/custom-design`, {
@@ -26,7 +36,7 @@ export async function getDesign(designId) {
   return res.json();
 }
 
-// เซฟ design ใหม่ (POST) — designData: { design_name, design_description, components: [{ inventory_item_id, quantity }] }
+// เซฟ design ใหม่ (POST) — designData: { design_name, design_description, preset (1-5), overwrite?, components: [{ inventory_item_id, quantity }] }
 export async function createDesign(designData) {
   const res = await fetch(`${API_BASE}/custom-design`, {
     method: "POST",
@@ -36,7 +46,7 @@ export async function createDesign(designData) {
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || "Failed to save custom design");
+    throw apiError(res, data, "Failed to save custom design");
   }
   return data.design;
 }
@@ -51,7 +61,7 @@ export async function updateDesign(designId, designData) {
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || "Failed to update custom design");
+    throw apiError(res, data, "Failed to update custom design");
   }
   return data.design;
 }
