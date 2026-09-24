@@ -94,14 +94,21 @@ export default function CartPage() {
 
 function Cart() {
   const navigate = useNavigate();
-  const { items, increaseQty, decreaseQty, removeItem, giftNote, setGiftNote } =
-    useCart();
+  const {
+    items,
+    summary,
+    cartError,
+    increaseQty,
+    decreaseQty,
+    removeItem,
+    giftNote,
+    setGiftNote,
+    saveGiftNote,
+  } = useCart();
   const [pendingRemoval, setPendingRemoval] = useState(null);
 
-  const subTotal = items.reduce(
-    (sum, item) => sum + item.unit_price * item.quantity,
-    0,
-  );
+  // ราคาคำนวณที่ backend แล้ว (GET /cart) ไม่ต้องบวกเองที่หน้านี้
+  const subTotal = summary.subtotal;
 
   function handleCheckout() {
     if (items.length === 0) return;
@@ -188,6 +195,10 @@ function Cart() {
               </button>
             </div>
 
+            {cartError && (
+              <p className="text-center text-sm text-red-600">{cartError}</p>
+            )}
+
             {items.length === 0 ? (
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-10 border border-black/5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] text-center text-[#4A4A4A]/60">
                 ยังไม่มีของในตะกร้า
@@ -195,7 +206,7 @@ function Cart() {
             ) : (
               items.map((item) => (
                 <CartItem
-                  key={item.product_id}
+                  key={item._id}
                   item={item}
                   onIncrease={increaseQty}
                   onDecrease={() => handleDecreaseRequest(item)}
@@ -222,6 +233,8 @@ function Cart() {
                   id="gift-note"
                   value={giftNote}
                   onChange={(e) => setGiftNote(e.target.value)}
+                  onBlur={saveGiftNote} // พิมพ์เสร็จ (คลิกออกจากช่อง) ค่อยบันทึกลง backend
+                  maxLength={200} // backend จำกัด gift_note ไว้ 200 ตัวอักษร
                   placeholder="Write your message here..."
                   rows={3}
                   className="w-full text-[13px] text-[#4A4A4A] placeholder:text-[#4A4A4A]/40 placeholder:italic bg-white/60 border border-black/10 rounded-lg p-2 resize-none focus:outline-none focus:border-[#586158]/50"

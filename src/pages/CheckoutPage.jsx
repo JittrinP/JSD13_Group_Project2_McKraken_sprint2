@@ -21,7 +21,7 @@ function formatPrice(value) {
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, giftNote, placeOrder } = useCart();
+  const { items, summary, giftNote, placeOrder } = useCart();
   const { user, isLoggedIn } = useAuth();
   const [showConfirmed, setShowConfirmed] = useState(false);
   const [qrData, setQrData] = useState(null); // เก็บ { id, qrImageUrl } ที่ได้จาก backend หลังสร้าง PaymentIntent
@@ -34,13 +34,12 @@ export default function CheckoutPage() {
     ? `${defaultAddress.address}, ${defaultAddress.sub_district}, ${defaultAddress.district}, ${defaultAddress.province} ${defaultAddress.postal_code}`
     : null;
 
-  const subTotal = items.reduce(
-    (sum, item) => sum + item.unit_price * item.quantity,
-    0,
-  );
-  const deliveryFee = items.length > 0 ? 10 : 0;
-  const serviceFee = 0;
-  const grandTotal = subTotal + deliveryFee + serviceFee;
+  // ราคาทั้งหมดมาจาก backend (GET /cart) ให้ตรงกับที่ backend คิด
+  // service fee = 100 ต่อช่อ custom, delivery fee = 10 (0 ถ้าตะกร้าว่าง) ดู utils/pricing.js ใน backend
+  const subTotal = summary.subtotal;
+  const deliveryFee = summary.delivery_fee;
+  const serviceFee = summary.service_fee;
+  const grandTotal = summary.total;
 
   const handlePlaceOrder = async () => {
     // กดปุ่ม Confirmed Order แล้ว "ยัง" ไม่ถือว่า order สำเร็จ ต้องรอจ่ายเงินผ่านก่อน (ดู handlePaymentSuccess ด้านล่าง)
