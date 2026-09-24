@@ -4,7 +4,7 @@ import { useCart } from "../context/CartContext";
 // import { MOCK_PRODUCTS, addToCart } from "../mock-data/product-cart"; // เดิมใช้กับ DEV block ด้านล่าง เก็บไว้อ้างอิง
 
 function formatPrice(value) {
-  return `$${value.toFixed(2)}`;
+  return `฿${value.toFixed(2)}`;
 }
 
 function CartItem({ item, onIncrease, onDecrease, onRemove }) {
