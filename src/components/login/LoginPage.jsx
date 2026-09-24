@@ -8,13 +8,10 @@ export default function LoginPage({
   onSwitchToRegister,
   onForgotPassword,
 }) {
-  // ดึงมาแค่ฟังก์ชัน login() ไม่ต้องเอา users มาแล้ว
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  // เพิ่ม State สำหรับสถานะกำลังโหลด (เผื่อเอาไปทำปุ่มหมุนๆ)
   const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -25,15 +22,11 @@ export default function LoginPage({
     setIsLoading(true);
 
     try {
-      // เรียกใช้ฟังก์ชัน login จาก Context ที่เราเขียนยิง API ไว้
       await login(email, password);
-
-      // ถ้าสำเร็จ ให้ล้างฟอร์มและปิด Popup
       setEmail("");
       setPassword("");
       onClose?.();
     } catch (err) {
-      // จับ Error ที่ Backend ส่งกลับมา (เช่น รหัสผิด บัญชีโดนแบน) มาแสดงผล
       const backendErrorMessage =
         err.response?.data?.message || "Invalid email or password.";
       setError(backendErrorMessage);
@@ -45,13 +38,14 @@ export default function LoginPage({
   return (
     <div
       role="presentation"
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
+      onMouseDown={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Login"
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-[454px] rounded-3xl bg-background px-12 py-2 shadow-[0px_4px_20px_0px_rgba(0,0,0,0.25)]"
       >

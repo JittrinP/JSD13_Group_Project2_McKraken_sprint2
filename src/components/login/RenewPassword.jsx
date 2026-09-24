@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Flower2, X } from "lucide-react";
-// Import api แทน useAuth
 import { api } from "../../context/AuthContext";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -30,7 +29,6 @@ export default function RenewPassword({
     e.preventDefault();
     setError("");
 
-    // เช็คความถูกต้องของรหัสผ่านฝั่งหน้าบ้าน
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
@@ -43,18 +41,15 @@ export default function RenewPassword({
     setIsLoading(true);
 
     try {
-      // ส่งข้อมูลทั้ง 3 ตัวไปให้ Backend ตรวจสอบ
       await api.post("/auth/reset-password", {
         email,
         code,
         newPassword,
       });
 
-      // ถ้า Backend ตอบกลับ 200 (สำเร็จ) ให้ล้างฟอร์มแล้วพาไปหน้า Login
       resetForm();
       onSwitchToLogin?.();
     } catch (err) {
-      // ถ้า Code ผิด หรือหมดเวลา Backend จะส่ง Error กลับมา
       setError(err.response?.data?.message || "Invalid verification code.");
     } finally {
       setIsLoading(false);
@@ -64,13 +59,14 @@ export default function RenewPassword({
   return (
     <div
       role="presentation"
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
+      onMouseDown={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Change password"
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-[454px] rounded-3xl bg-background px-12 py-2 shadow-[0px_4px_20px_0px_rgba(0,0,0,0.25)]"
       >

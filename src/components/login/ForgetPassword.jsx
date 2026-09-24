@@ -32,13 +32,14 @@ export default function ForgetPassword({ isOpen, onClose, onCodeSent }) {
   return (
     <div
       role="presentation"
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
+      onMouseDown={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Forget password"
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-[454px] rounded-3xl bg-background px-12 py-2 shadow-[0px_4px_20px_0px_rgba(0,0,0,0.25)]"
       >
