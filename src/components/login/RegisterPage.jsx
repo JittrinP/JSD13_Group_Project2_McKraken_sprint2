@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { Flower2, X, Eye, EyeOff } from "lucide-react";
-// Import ตัวแปร api ออกมาจากไฟล์ AuthContext
 import { api } from "../../context/AuthContext";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
-  // ไม่ต้องเรียก useAuth() แล้ว ลบบรรทัด const { users, register } = useAuth(); ทิ้งได้เลย
-
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,7 +30,6 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // เช็ค Validation พื้นฐานฝั่งหน้าบ้านก่อน (เหมือนเดิม)
     if (!EMAIL_PATTERN.test(email)) {
       setError("Please enter a valid email address.");
       return;
@@ -51,7 +47,6 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
     setError("");
 
     try {
-      // ยิง API ไปสร้าง User ที่ Backend
       await api.post("/auth/register", {
         firstName,
         lastName,
@@ -59,11 +54,9 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
         password,
       });
 
-      // ถ้าสำเร็จ ล้างฟอร์มแล้วสลับไปหน้า Login
       resetForm();
       onSwitchToLogin?.();
     } catch (err) {
-      // ถ้าอีเมลซ้ำ หรือมี Error อื่นๆ ให้แสดงข้อความ
       const backendErrorMessage =
         err.response?.data?.message || "Registration failed. Please try again.";
       setError(backendErrorMessage);
@@ -75,13 +68,14 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
   return (
     <div
       role="presentation"
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-6"
+      onMouseDown={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Create account"
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-[460px] rounded-xl border border-[#e4e2e2] bg-background p-5 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.04)] md:p-8"
       >
