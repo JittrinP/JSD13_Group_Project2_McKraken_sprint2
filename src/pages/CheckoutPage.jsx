@@ -16,7 +16,7 @@ const paymentMethods = [qrcode, alipay, jcb, mastercard, visa, unionpay];
 const API_BASE = import.meta.env.VITE_API_URL; // ที่อยู่ backend อ่านจากไฟล์ .env
 
 function formatPrice(value) {
-  return `$${Number(value).toFixed(2)}`;
+  return `฿${Number(value).toFixed(2)}`;
 }
 
 export default function CheckoutPage() {

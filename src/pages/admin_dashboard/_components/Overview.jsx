@@ -275,7 +275,7 @@ export default function Overview() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-2xl font-semibold">$2000.1</p>
+                <p className="text-center text-2xl font-semibold">฿2000.10</p>
               </CardContent>
             </Card>
 
