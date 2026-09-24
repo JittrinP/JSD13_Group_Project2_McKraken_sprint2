@@ -1,168 +1,185 @@
 import { useState, useEffect } from "react";
-import { useCart } from "../../../context/CartContext";
+import { api } from "../../../context/AuthContext"; 
 
 export default function PurchaseItem() {
-  const { orders } = useCart();
+  const [purchases, setPurchases] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // แปลงโครงสร้างจาก orders ใน CartContext -> เป็นรายการสินค้าแต่ละชิ้นสำหรับแสดงผล
-  const getRealPurchases = () =>
-    orders?.flatMap((order) =>
-      order.items.map((item, index) => ({
-        id: `${order.order_id}-${item.product_id || index}`,
-        order_id: order.order_id,
-        name: item.name,
-        status: order.status === "confirmed" ? "In Progress" : order.status,
-        quantity: item.quantity,
-        price: item.unit_price,
-        canCancel: order.status === "confirmed" || order.status === "Process",
-        image: item.images?.[0] || "https://placehold.co/62x62?text=62×62",
-      })),
-    ) || [];
+  const fetchMyOrders = async () => {
+    setIsLoading(true);
+    try {
+      const res = await api.get("/orders/my-orders"); 
+      const orders = res.data.orders || res.data; 
 
-  // เก็บรายการออเดอร์ลง state
-  const [purchases, setPurchases] = useState(getRealPurchases);
+      // แปลงโครงสร้างให้ตรงกับตารางแสดงผล
+      const formattedPurchases = orders.flatMap((order) =>
+        order.items.map((item, index) => {
+          
+          // แมปปิ้งสถานะจาก Database ให้เป็นคำสวยๆ สำหรับ UI
+          let uiStatus = "Pending";
+          if (order.order_status === "processing") uiStatus = "In Progress";
+          else if (order.order_status === "shipped") uiStatus = "Shipped";
+          else if (order.order_status === "completed") uiStatus = "Completed";
+          else if (order.order_status === "cancelled") uiStatus = "Cancelled";
 
-  // อัปเดตรายการเมื่อมีการสั่งซื้อใหม่เข้ามาจาก CartContext
+          return {
+            id: `${order._id}-${item.product_id?._id || index}`, 
+            order_id: order._id,
+            order_number: order.order_number, // ดึง order_number จริงจาก Model
+            name: item.item_name, // แมปให้ตรงกับ item_name ใน orderItemSchema
+            status: uiStatus,
+            quantity: item.quantity,
+            price: item.unit_price,
+            // อนุญาตให้ยกเลิกได้เฉพาะตอน pending หรือ processing
+            canCancel: order.order_status === "pending" || order.order_status === "processing", 
+            // ดึงรูปที่ populate มา หรือใช้รูป placeholder สำหรับช่อ custom 
+            image: item.product_id?.images?.[0] || "https://placehold.co/62x62?text=Custom+Bouquet",
+          };
+        })
+      );
+      setPurchases(formattedPurchases);
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setPurchases(getRealPurchases());
-  }, [orders]);
+    fetchMyOrders();
+  }, []);
 
-  // ฟังก์ชัน Cancel
-  const handleCancel = (itemId) => {
-    const isConfirmed = window.confirm("Do you want to cancel this order?");
+  const handleCancel = async (orderId) => {
+    const isConfirmed = window.confirm("Do you want to cancel this entire order?");
     if (!isConfirmed) return;
 
-    setPurchases((prev) =>
-      prev.map((item) =>
-        item.id === itemId
-          ? { ...item, status: "Cancelled", canCancel: false }
-          : item,
-      ),
-    );
+    try {
+      await api.patch(`/orders/${orderId}/cancel`);
+      alert("Order cancelled successfully");
+      fetchMyOrders();
+    } catch (error) {
+      console.error("Failed to cancel order:", error);
+      alert(error.response?.data?.message || "Failed to cancel order");
+    }
   };
 
   return (
     <div className="text-primary">
       <h2 className="font-display text-2xl font-bold">Purchases</h2>
 
-      {/* Container ตารางพร้อมการเลื่อน (Scroll) */}
-      <div className="mt-4 flex flex-col rounded-2xl border border-[#929B91]/30 bg-background p-4 shadow-sm lg:m-4 lg:gap-0 lg:max-h-125 lg:overflow-auto lg:p-0">
-        {/* หัวตาราง*/}
-        <div className="hidden lg:grid grid-cols-9 font-body p-2 border-b border-[#929B91]/30 lg:sticky lg:top-0 lg:z-10 lg:bg-background">
-          <div className="col-span-4 pl-2">Product</div>
-          <div className="col-span-2 text-center">Status</div>
-          <div className="col-span-1 text-center">Quantity</div>
-          <div className="col-span-1 text-center">Price</div>
-          <div className="col-span-1 text-center">Action</div>
-        </div>
-
-        {/* กรณีไม่มีคำสั่งซื้อเลย */}
-        {purchases.length === 0 ? (
-          <div className="p-12 text-center text-neutral/60 font-body">
-            No order history
+      {isLoading ? (
+        <div className="mt-8 text-center text-neutral/60 font-body">Loading orders...</div>
+      ) : (
+        <div className="mt-4 flex flex-col rounded-2xl border border-[#929B91]/30 bg-background p-4 shadow-sm lg:m-4 lg:gap-0 lg:max-h-125 lg:overflow-auto lg:p-0">
+          <div className="hidden lg:grid grid-cols-9 font-body p-2 border-b border-[#929B91]/30 lg:sticky lg:top-0 lg:z-10 lg:bg-background">
+            <div className="col-span-4 pl-2">Product</div>
+            <div className="col-span-2 text-center">Status</div>
+            <div className="col-span-1 text-center">Quantity</div>
+            <div className="col-span-1 text-center">Price</div>
+            <div className="col-span-1 text-center">Action</div>
           </div>
-        ) : (
-          /* รายการสินค้า */
-          purchases.map((item) => {
-            const isShipping =
-              item.status === "In Progress" || item.status === "Shipped";
-            const isCancelled = item.status === "Cancelled";
 
-            return (
-              <div
-                key={item.id}
-                className="flex flex-col border-b border-[#929B91]/20 py-4 last:border-b-0 lg:grid lg:grid-cols-9 lg:items-center lg:gap-0 lg:rounded-none lg:border-b lg:border-[#929B91]/30 lg:p-4 lg:pl-10"
-              >
-                <div className="flex gap-4 lg:contents">
-                  <div className="shrink-0 lg:col-span-1">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="h-20 w-20 rounded-xl object-cover lg:h-15.5 lg:w-15.5"
-                    />
-                  </div>
+          {purchases.length === 0 ? (
+            <div className="p-12 text-center text-neutral/60 font-body">
+              No order history
+            </div>
+          ) : (
+            purchases.map((item) => {
+              // เช็คสถานะเพื่อเปลี่ยนสี Badge ให้ตรงกับ UI Status ที่แมปปิ้งไว้
+              const isShipping = item.status === "In Progress" || item.status === "Shipped";
+              const isCancelled = item.status === "Cancelled";
 
-                  <div className="flex min-w-0 flex-1 flex-col gap-2 lg:contents">
-                    <div className="lg:col-span-3 flex flex-col justify-center">
-                      <h3 className="font-display text-lg font-semibold lg:font-body lg:text-base lg:font-normal">
-                        {item.name}
-                      </h3>
-                      {item.order_id && (
-                        <span className="text-xs text-neutral/50 font-mono mt-0.5">
-                          Order: #{item.order_id.slice(0, 8)}
-                        </span>
-                      )}
+              return (
+                <div
+                  key={item.id}
+                  className="flex flex-col border-b border-[#929B91]/20 py-4 last:border-b-0 lg:grid lg:grid-cols-9 lg:items-center lg:gap-0 lg:rounded-none lg:border-b lg:border-[#929B91]/30 lg:p-4 lg:pl-10"
+                >
+                  <div className="flex gap-4 lg:contents">
+                    <div className="shrink-0 lg:col-span-1">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="h-20 w-20 rounded-xl object-cover lg:h-15.5 lg:w-15.5"
+                      />
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 lg:contents">
-                      <div className="flex items-center text-sm lg:col-span-2 lg:justify-center">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ${
-                            isShipping
-                              ? "bg-[#4A554D] text-white"
-                              : isCancelled
-                                ? "bg-red-100 text-destructive"
-                                : "bg-[#E5E7E4] text-[#4A554D]"
-                          }`}
-                        >
+                    <div className="flex min-w-0 flex-1 flex-col gap-2 lg:contents">
+                      <div className="lg:col-span-3 flex flex-col justify-center">
+                        <h3 className="font-display text-lg font-semibold lg:font-body lg:text-base lg:font-normal">
+                          {item.name}
+                        </h3>
+                        {/* แสดงผล order_number ที่ถูกเจนมาจากระบบหลังบ้าน */}
+                        {item.order_number && (
+                          <span className="text-xs text-neutral/50 font-mono mt-0.5">
+                            Order: #{item.order_number}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 lg:contents">
+                        <div className="flex items-center text-sm lg:col-span-2 lg:justify-center">
                           <span
-                            className={`h-1.5 w-1.5 rounded-full ${
+                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs capitalize ${
                               isShipping
-                                ? "bg-white"
+                                ? "bg-[#4A554D] text-white"
                                 : isCancelled
-                                  ? "bg-destructive"
-                                  : "bg-[#4A4A4A]"
+                                  ? "bg-red-100 text-destructive"
+                                  : "bg-[#E5E7E4] text-[#4A554D]"
                             }`}
-                          ></span>
-                          {item.status}
-                        </span>
-                      </div>
-
-                      {/* Quantity & Price */}
-                      <div className="flex items-center text-sm text-neutral/80 lg:contents">
-                        {/* Desktop: Quantity */}
-                        <div className="hidden lg:block lg:col-span-1 lg:text-center lg:text-base lg:font-medium">
-                          {item.quantity}
-                        </div>
-
-                        {/* Desktop: Price */}
-                        <div className="hidden lg:block lg:col-span-1 lg:text-center lg:text-base lg:font-bold">
-                          ${item.price.toFixed(2)}
-                        </div>
-
-                        <div className="lg:hidden font-body text-sm">
-                          <span className="text-neutral/70">
-                            {item.quantity} Item :{" "}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                isShipping
+                                  ? "bg-white"
+                                  : isCancelled
+                                    ? "bg-destructive"
+                                    : "bg-neutral"
+                              }`}
+                            ></span>
+                            {item.status}
                           </span>
-                          <span className="font-bold text-neutral">
+                        </div>
+
+                        <div className="flex items-center text-sm text-neutral/80 lg:contents">
+                          <div className="hidden lg:block lg:col-span-1 lg:text-center lg:text-base lg:font-medium">
+                            {item.quantity}
+                          </div>
+                          <div className="hidden lg:block lg:col-span-1 lg:text-center lg:text-base lg:font-bold">
                             ${item.price.toFixed(2)}
-                          </span>
+                          </div>
+                          <div className="lg:hidden font-body text-sm">
+                            <span className="text-neutral/70">
+                              {item.quantity} Item :{" "}
+                            </span>
+                            <span className="font-bold text-neutral">
+                              ${item.price.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Action: ปุ่ม Cancel*/}
-                    <div className="mt-1 flex justify-end lg:mt-0 lg:contents lg:justify-self-center">
-                      {item.canCancel ? (
-                        <button
-                          onClick={() => handleCancel(item.id)}
-                          className="rounded-full bg-[#8C4A4A] px-6 py-1.5 text-sm font-medium text-white transition-opacity hover:cursor-pointer hover:opacity-90 lg:col-span-1 lg:justify-self-center lg:bg-transparent lg:p-0 lg:text-destructive lg:hover:bg-transparent lg:hover:underline"
-                        >
-                          Cancel
-                        </button>
-                      ) : (
-                        <span className="rounded-full bg-[#C5CAC3] px-6 py-1.5 text-sm font-medium text-white cursor-not-allowed lg:col-span-1 lg:justify-self-center lg:bg-transparent lg:p-0 lg:text-neutral/40">
-                          Cancel
-                        </span>
-                      )}
+                      <div className="mt-1 flex justify-end lg:mt-0 lg:contents lg:justify-self-center">
+                        {item.canCancel ? (
+                          <button
+                            onClick={() => handleCancel(item.order_id)}
+                            className="rounded-full bg-[#8C4A4A] px-6 py-1.5 text-sm font-medium text-white transition-opacity hover:cursor-pointer hover:opacity-90 lg:col-span-1 lg:justify-self-center lg:bg-transparent lg:p-0 lg:text-destructive lg:hover:bg-transparent lg:hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        ) : (
+                          <span className="rounded-full bg-[#C5CAC3] px-6 py-1.5 text-sm font-medium text-white cursor-not-allowed lg:col-span-1 lg:justify-self-center lg:bg-transparent lg:p-0 lg:text-neutral/40">
+                            Cancel
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 }
