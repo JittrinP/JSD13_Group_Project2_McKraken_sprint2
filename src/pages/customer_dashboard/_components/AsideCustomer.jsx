@@ -8,7 +8,7 @@ const menuItems = [
   { id: "purchases", name: "Purchase", path: "purchases", Icon: Truck },
   { id: "bouquet", name: "Bouquet", path: "bouquet", Icon: Flower2 },
   { id: "address", name: "My Address", path: "address", Icon: MapPin },
-  { id: "favorite", name: "Favorite", path: "favorite", Icon: Heart },
+  // { id: "favorite", name: "Favorite", path: "favorite", Icon: Heart },
 ];
 
 export default function AsideCustomer() {
