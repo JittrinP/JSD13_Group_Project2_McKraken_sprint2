@@ -11,3 +11,11 @@ export async function askAI(question, history = []) {
   const res = await api.post("/ai/ask", { question, history });
   return res.data.data;
 }
+
+// admin เท่านั้น (POST /api/v1/ai/sync) ให้ AI รู้จักสินค้า / วัตถุดิบล่าสุด หลังเพิ่ม-แก้-ลบในหน้า Admin
+// คืน { embedded, skipped, failed, removed, seconds }
+// error: 403 = ไม่ใช่ admin / 409 = มีคนกำลัง sync อยู่
+export async function syncAiKnowledge() {
+  const res = await api.post("/ai/sync");
+  return res.data.data;
+}

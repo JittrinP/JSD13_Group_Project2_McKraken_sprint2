@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, memo, useEffect } from "react";
 import { api } from "../../../context/AuthContext"; // ตรวจสอบ path ให้ตรงกับที่อยู่จริง
 import { getProducts } from "../../../lib/productApi"; // ตรวจสอบ path ให้ตรงกับที่อยู่จริง
+import SyncAiButton from "../../../components/SyncAiButton"; // ปุ่มให้ AI chatbot รู้จักสินค้าล่าสุด — base
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -860,12 +861,16 @@ export default function ProductEdit() {
               )}
             </div>
           </div>
-          <Button
-            onClick={() => handleOpenModal()}
-            className="bg-D-text hover:bg-[#38436c] text-white rounded-xl px-5 py-2.5 shadow-none"
-          >
-            <Plus className="w-4 h-4 mr-1.5" /> Add item
-          </Button>
+          {/* Sync AI: กดหลังเพิ่ม/แก้/ลบ ให้ AI chatbot รู้จักข้อมูลล่าสุด — base */}
+          <div className="flex flex-col-reverse items-start gap-3 sm:flex-row sm:items-start">
+            <SyncAiButton />
+            <Button
+              onClick={() => handleOpenModal()}
+              className="bg-D-text hover:bg-[#38436c] text-white rounded-xl px-5 py-2.5 shadow-none"
+            >
+              <Plus className="w-4 h-4 mr-1.5" /> Add item
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
