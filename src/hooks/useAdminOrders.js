@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
 import { api } from "../context/AuthContext"; // axios ที่แนบ cookie (token) ไปกับทุก request ให้อัตโนมัติ
 
-// ---------- API helpers (เรียก backend /api/v1/admin/orders) ----------
+// ---------- API helpers (เรียก backend /api/v1/orders) ----------
 
 // ดึง order ทีละหน้า params เช่น { page: 1, limit: 10, status: "pending", search: "ORD" }
 async function getOrders(params) {
-  const res = await api.get("/admin/orders", { params }); // axios แปลง params เป็น ?page=1&limit=10... ให้เอง
+  const res = await api.get("/orders", { params }); // axios แปลง params เป็น ?page=1&limit=10... ให้เอง
   return res.data; // { success, data: [...orders], pagination: {...} }
 }
 
 // แก้สถานะ order (backend รับแค่ order_status field เดียว)
 async function patchOrderStatus(orderId, status) {
-  const res = await api.patch(`/admin/orders/${orderId}/status`, { order_status: status });
+  const res = await api.patch(`/orders/${orderId}/status`, { order_status: status });
   return res.data; // { success, data: order ที่แก้แล้ว }
 }
 
 // ลบ order ออกจาก database จริง
 async function removeOrder(orderId) {
-  const res = await api.delete(`/admin/orders/${orderId}`);
+  const res = await api.delete(`/orders/${orderId}`);
   return res.data; // { success, message }
 }
 
