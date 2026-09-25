@@ -58,7 +58,7 @@ export default function PopShopBlog({
       <section className="bg-tertiary">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-8 md:py-14">
           <div className="flex items-baseline justify-between gap-4">
-            <h2 className="font-display text-2xl font-bold md:text-3xl">
+            <h2 className="text-primary font-display text-2xl font-bold md:text-3xl">
               Popular Blog
             </h2>
             <button

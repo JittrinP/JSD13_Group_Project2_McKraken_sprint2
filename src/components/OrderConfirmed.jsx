@@ -4,7 +4,7 @@ import { useCart } from "../context/CartContext";
 import checkIcon from "../assets/orderconfirmed/check.svg";
 
 function formatPrice(value) {
-  return `THB ${Number(value).toFixed(2)}`;
+  return `฿${Number(value).toFixed(2)}`;
 }
 
 export default function OrderConfirmed({ onClose }) {

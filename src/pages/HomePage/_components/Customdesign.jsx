@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import '@google/model-viewer';
-import flowerModel from '../../../assets/flower.glb?url';
+const flowerModel = "https://rri4tg6y27zcjsqa.public.blob.vercel-storage.com/flower.glb";
 import { createDesign, updateDesign, getDesign } from '../../../lib/customDesignApi';
 import { useCart } from '../../../context/CartContext';
 

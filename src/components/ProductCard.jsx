@@ -42,7 +42,7 @@ export default function ProductCard({ product }) {
             className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
           <span className="absolute bottom-2.5 right-2.5 bg-white/95 text-neutral text-xs px-2.5 py-1 rounded-full font-medium shadow-sm pointer-events-none">
-            ${product.base_price.toFixed(2)}
+            ฿{product.base_price.toFixed(2)}
           </span>
         </div>
         <h3 className="product-title font-semibold text-gray-800 text-sm sm:text-base line-clamp-1">

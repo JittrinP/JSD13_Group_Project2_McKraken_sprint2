@@ -145,14 +145,14 @@ export default function PurchaseItem() {
                             {item.quantity}
                           </div>
                           <div className="hidden lg:block lg:col-span-1 lg:text-center lg:text-base lg:font-bold">
-                            ${item.price.toFixed(2)}
+                            ฿{item.price.toFixed(2)}
                           </div>
                           <div className="lg:hidden font-body text-sm">
                             <span className="text-neutral/70">
                               {item.quantity} Item :{" "}
                             </span>
                             <span className="font-bold text-neutral">
-                              ${item.price.toFixed(2)}
+                              ฿{item.price.toFixed(2)}
                             </span>
                           </div>
                         </div>
