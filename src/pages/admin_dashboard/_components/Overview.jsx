@@ -41,6 +41,7 @@ import {
 import { Link } from "react-router-dom";
 
 import { useAdminOrders } from "../../../hooks/useAdminOrders"; // hook เดียวกับหน้า Orders ใช้ดึง Recent Order
+import { api } from "../../../context/AuthContext"; // axios ที่แนบ cookie (token) ไปกับทุก request ให้อัตโนมัติ
 
 //  data สำหรับ graph Sale Statistic
 const SaleStatisticChartData = [
@@ -153,24 +154,25 @@ const SaleStatisticChartConfig = {
   },
 };
 
+// config ของกราฟ Shipment Status: ชื่อ key ต้องตรงกับ order_status ใน order.model.js
 const ShipmentStatusChartConfig = {
   orders: {
     label: "Orders",
   },
-  delivered: {
-    label: "Delivered",
+  pending: {
+    label: "Pending",
     color: "var(--chart-1)",
-  },
-  shipping: {
-    label: "Shipping",
-    color: "var(--chart-2)",
   },
   processing: {
     label: "Processing",
+    color: "var(--chart-2)",
+  },
+  shipped: {
+    label: "Shipped",
     color: "var(--chart-3)",
   },
-  pending: {
-    label: "Pending",
+  completed: {
+    label: "Completed",
     color: "var(--chart-4)",
   },
   cancelled: {
@@ -179,14 +181,6 @@ const ShipmentStatusChartConfig = {
   },
 };
 
-// Shipment Status
-const ShipmentPieChartData = [
-  { status: "delivered", orders: 275, fill: "var(--color-delivered)" },
-  { status: "shipping", orders: 120, fill: "var(--color-shipping)" },
-  { status: "processing", orders: 90, fill: "var(--color-processing)" },
-  { status: "pending", orders: 45, fill: "var(--color-pending)" },
-  { status: "cancelled", orders: 20, fill: "var(--color-cancelled)" },
-];
 
 //Sale overview Chart
 const SaleChartConfig = {
@@ -233,6 +227,46 @@ export default function Overview() {
     status: "all",
     search: "",
     limit: 10,
+  });
+
+  // Shipment Status: ข้อมูลกราฟวงกลม เริ่มเป็น array ว่าง รอโหลดจาก backend
+  const [shipmentChartData, setShipmentChartData] = React.useState([]);
+  const [isShipmentLoading, setIsShipmentLoading] = React.useState(true); // true ระหว่างรอ backend ตอบ
+  const [shipmentError, setShipmentError] = React.useState(""); // ข้อความ error ถ้าโหลดไม่สำเร็จ
+
+  // โหลดจำนวน order แยกตาม status ครั้งเดียวตอนเปิดหน้า
+  React.useEffect(() => {
+    async function fetchOrderStatusCount() {
+      setIsShipmentLoading(true);
+      setShipmentError(""); // ล้าง error เก่าก่อนโหลดใหม่
+      try {
+        const res = await api.get("/dashboard/order-status"); // ได้ { success, data: [{ status, count }, ...] }
+
+        // แปลงเป็นหน้าตาที่กราฟใช้: orders = จำนวน, fill = สีตาม status จาก ShipmentStatusChartConfig
+        const chartData = res.data.data.map((item) => {
+          return {
+            status: item.status,
+            orders: item.count,
+            fill: "var(--color-" + item.status + ")", // เช่น var(--color-pending)
+          };
+        });
+
+        setShipmentChartData(chartData); // เก็บลง state แล้วกราฟจะวาดใหม่เอง
+      } catch (err) {
+        console.error(err);
+        setShipmentError("Failed to load order status. Please try again."); // เอาไปแสดงในกล่องกราฟ
+      } finally {
+        setIsShipmentLoading(false); // สำเร็จหรือพังก็เลิกโหลด
+      }
+    }
+
+    fetchOrderStatusCount();
+  }, []); // [] = ทำครั้งเดียวตอนเปิดหน้า
+
+  // รวมจำนวน order ทุก status ถ้าได้ 0 แปลว่ายังไม่มี order เลย (ใช้ตัดสินว่าจะแสดง "No orders")
+  let totalShipmentOrders = 0;
+  shipmentChartData.forEach((item) => {
+    totalShipmentOrders = totalShipmentOrders + item.orders;
   });
 
   const filteredData = SaleStatisticChartData.filter((item) => {
@@ -443,18 +477,49 @@ export default function Overview() {
                   <CardDescription>Current shipment breakdown</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 pb-0">
-                  <ChartContainer
-                    config={ShipmentStatusChartConfig}
-                    className="mx-auto aspect-square max-h-[300px]"
-                  >
-                    <PieChart>
-                      <Pie data={ShipmentPieChartData} dataKey="orders" />
-                      <ChartLegend
-                        content={<ChartLegendContent nameKey="status" />}
-                        className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"
-                      />
-                    </PieChart>
-                  </ChartContainer>
+                  {/* กำลังโหลด */}
+                  {isShipmentLoading && (
+                    <p className="py-16 text-center text-sm text-[#8A91A0]">Loading...</p>
+                  )}
+
+                  {/* โหลดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
+                  {!isShipmentLoading && shipmentError && (
+                    <p className="py-16 text-center text-sm text-[#9A4D4D]">{shipmentError}</p>
+                  )}
+
+                  {/* โหลดสำเร็จแต่ยังไม่มี order เลย (ทุก status เป็น 0) */}
+                  {!isShipmentLoading && !shipmentError && totalShipmentOrders === 0 && (
+                    <p className="py-16 text-center text-sm text-[#8A91A0]">No orders</p>
+                  )}
+
+                  {/* มีข้อมูล: แสดงกราฟ + legend */}
+                  {!isShipmentLoading && !shipmentError && totalShipmentOrders > 0 && (
+                    <>
+                      <ChartContainer
+                        config={ShipmentStatusChartConfig}
+                        className="mx-auto aspect-square max-h-[300px]"
+                      >
+                        <PieChart>
+                          <Pie data={shipmentChartData} dataKey="orders" />
+                        </PieChart>
+                      </ChartContainer>
+
+                      {/* legend เขียนเอง: จุดสี + ชื่อ status + จำนวน order (ชิ้นเล็กในกราฟอ่านยาก เลยบอกตัวเลขตรงนี้) */}
+                      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 pb-4 text-xs">
+                        {shipmentChartData.map((item) => (
+                          <li key={item.status} className="flex items-center gap-1.5">
+                            {/* ใช้สีกับชื่อจาก config ตัวเดียวกับกราฟ สีจึงตรงกับชิ้นในวงกลม */}
+                            <span
+                              className="h-2 w-2 rounded-[2px]"
+                              style={{ backgroundColor: ShipmentStatusChartConfig[item.status].color }}
+                            />
+                            <span>{ShipmentStatusChartConfig[item.status].label}</span>
+                            <span className="font-semibold">{item.orders}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
