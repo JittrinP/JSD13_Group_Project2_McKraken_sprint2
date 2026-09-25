@@ -182,39 +182,20 @@ const ShipmentStatusChartConfig = {
 };
 
 
-//Sale overview Chart
-const SaleChartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  chrome: {
-    label: "Chrome",
-    color: "var(--chart-1)",
-  },
-  safari: {
-    label: "Safari",
-    color: "var(--chart-2)",
-  },
-  firefox: {
-    label: "Firefox",
-    color: "var(--chart-3)",
-  },
-  edge: {
-    label: "Edge",
-    color: "var(--chart-4)",
-  },
-  other: {
-    label: "Other",
-    color: "var(--chart-5)",
+// config ของกราฟ Top 5 Flowers: ชื่อดอกไม้มาจาก backend (เปลี่ยนได้) เลยไม่ผูกสีกับชื่อ แต่ผูกสีกับอันดับแทน
+const TopFlowersChartConfig = {
+  quantity: {
+    label: "Used",
   },
 };
 
-const SalePieChartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 90, fill: "var(--color-other)" },
+// สีของอันดับ 1-5 (อันดับ 1 ใช้สีแรก)
+const TOP_FLOWER_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ];
 
 
@@ -268,6 +249,40 @@ export default function Overview() {
   shipmentChartData.forEach((item) => {
     totalShipmentOrders = totalShipmentOrders + item.orders;
   });
+
+  // Top 5 Flowers: ข้อมูลกราฟวงกลม เริ่มเป็น array ว่าง รอโหลดจาก backend
+  const [topFlowersChartData, setTopFlowersChartData] = React.useState([]);
+  const [isTopFlowersLoading, setIsTopFlowersLoading] = React.useState(true); // true ระหว่างรอ backend ตอบ
+  const [topFlowersError, setTopFlowersError] = React.useState(""); // ข้อความ error ถ้าโหลดไม่สำเร็จ
+
+  // โหลดดอกไม้ที่ถูกใช้มากที่สุด 5 อันดับ ครั้งเดียวตอนเปิดหน้า
+  React.useEffect(() => {
+    async function fetchTopFlowers() {
+      setIsTopFlowersLoading(true);
+      setTopFlowersError(""); // ล้าง error เก่าก่อนโหลดใหม่
+      try {
+        const res = await api.get("/dashboard/top-flowers"); // ได้ { success, data: [{ name, quantity }, ...] } เรียงมากไปน้อยแล้ว
+
+        // แปลงเป็นหน้าตาที่กราฟใช้: เติม fill = สีตามอันดับ (index 0 = อันดับ 1)
+        const chartData = res.data.data.map((item, index) => {
+          return {
+            name: item.name,
+            quantity: item.quantity,
+            fill: TOP_FLOWER_COLORS[index],
+          };
+        });
+
+        setTopFlowersChartData(chartData); // เก็บลง state แล้วกราฟจะวาดใหม่เอง
+      } catch (err) {
+        console.error(err);
+        setTopFlowersError("Failed to load top flowers. Please try again."); // เอาไปแสดงในกล่องกราฟ
+      } finally {
+        setIsTopFlowersLoading(false); // สำเร็จหรือพังก็เลิกโหลด
+      }
+    }
+
+    fetchTopFlowers();
+  }, []); // [] = ทำครั้งเดียวตอนเปิดหน้า
 
   const filteredData = SaleStatisticChartData.filter((item) => {
     const date = new Date(item.date);
@@ -610,27 +625,57 @@ export default function Overview() {
               </Card>
               </div>
             </div>
-            {/* Sale Overview */}
+            {/* Sale Overview: ดอกไม้ที่ถูกใช้มากที่สุด 5 อันดับ (all time, ไม่นับ order ที่ cancelled) */}
             <div className="mt-4 md:w-[30%] h-full">
               <h2 className="text-2xl font-semibold pb-2">Sale Overview</h2>
               <Card className="flex flex-col bg-background">
                 <CardHeader className="items-center pb-0">
-                  <CardTitle>Pie Chart - Legend</CardTitle>
-                  <CardDescription>January - June 2024</CardDescription>
+                  <CardTitle>Most Used Flowers</CardTitle>
+                  <CardDescription>All time (excluding cancelled orders)</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 pb-0">
-                  <ChartContainer
-                    config={SaleChartConfig}
-                    className="mx-auto aspect-square max-h-[300px]"
-                  >
-                    <PieChart>
-                      <Pie data={SalePieChartData} dataKey="visitors" />
-                      <ChartLegend
-                        content={<ChartLegendContent nameKey="browser" />}
-                        className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"
-                      />
-                    </PieChart>
-                  </ChartContainer>
+                  {/* กำลังโหลด */}
+                  {isTopFlowersLoading && (
+                    <p className="py-16 text-center text-sm text-[#8A91A0]">Loading...</p>
+                  )}
+
+                  {/* โหลดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
+                  {!isTopFlowersLoading && topFlowersError && (
+                    <p className="py-16 text-center text-sm text-[#9A4D4D]">{topFlowersError}</p>
+                  )}
+
+                  {/* โหลดสำเร็จแต่ยังไม่มีดอกไม้ที่ถูกใช้เลย (backend ส่ง array ว่างมา) */}
+                  {!isTopFlowersLoading && !topFlowersError && topFlowersChartData.length === 0 && (
+                    <p className="py-16 text-center text-sm text-[#8A91A0]">No data</p>
+                  )}
+
+                  {/* มีข้อมูล: แสดงกราฟ + legend */}
+                  {!isTopFlowersLoading && !topFlowersError && topFlowersChartData.length > 0 && (
+                    <>
+                      <ChartContainer
+                        config={TopFlowersChartConfig}
+                        className="mx-auto aspect-square max-h-[300px]"
+                      >
+                        <PieChart>
+                          <Pie data={topFlowersChartData} dataKey="quantity" nameKey="name" />
+                        </PieChart>
+                      </ChartContainer>
+
+                      {/* legend เขียนเองแบบเดียวกับ Shipment Status: จุดสี + ชื่อดอกไม้ + จำนวนที่ใช้ */}
+                      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 pb-4 text-xs">
+                        {topFlowersChartData.map((item) => (
+                          <li key={item.name} className="flex items-center gap-1.5">
+                            <span
+                              className="h-2 w-2 rounded-[2px]"
+                              style={{ backgroundColor: item.fill }}
+                            />
+                            <span>{item.name}</span>
+                            <span className="font-semibold">{item.quantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
