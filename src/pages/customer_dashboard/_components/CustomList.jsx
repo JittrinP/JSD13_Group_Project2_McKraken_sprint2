@@ -82,9 +82,9 @@ export default function CustomList() {
                 {design.preset ?? "-"}
               </div>
 
-              {/* รูป (lg: คอลัมน์แรกของ Product) */}
+              {/* รูป (lg: คอลัมน์แรกของ Product) · มีรูป AI preview ที่เซฟไว้ → ใช้รูปนั้น ไม่มี → placeholder เดิม */}
               <img
-                src="https://placehold.co/140x140"
+                src={design.preview_image_url || "https://placehold.co/140x140"}
                 alt={design.design_name}
                 className="h-35 w-35 shrink-0 object-cover lg:col-span-1 lg:h-15.5 lg:w-15.5"
               />

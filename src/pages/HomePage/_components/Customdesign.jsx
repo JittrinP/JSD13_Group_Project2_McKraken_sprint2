@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import '@google/model-viewer';
 const flowerModel = "https://rri4tg6y27zcjsqa.public.blob.vercel-storage.com/flower.glb";
 import { createDesign, updateDesign, getDesign } from '../../../lib/customDesignApi';
 import { useCart } from '../../../context/CartContext';
+import { useAuth } from '../../../context/AuthContext';
+// AI Preview: สร้างรูปช่อด้วย AI (logic แยกไว้ใน useDesignPreview.js, หน้าตาใน PreviewPanel.jsx)
+import { useDesignPreview } from './useDesignPreview';
+import { PreviewImage, PreviewLoading, PreviewHistory } from './PreviewPanel';
 
 const CustomDesign = () => {
   // =========================================================================
@@ -55,6 +59,10 @@ const CustomDesign = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // ข้อความหลังเซฟ เช่น เซฟช่อได้แต่อัปรูป AI ไม่สำเร็จ
+  const [saveNotice, setSaveNotice] = useState('');
+  // โหมด Edit: ช่อที่เปิดมามีรูป AI เซฟไว้ → { url, components, caption } ส่งให้ useDesignPreview โชว์
+  const [savedPreviewImage, setSavedPreviewImage] = useState(null);
 
   /* Edit mode: มาจากลิงก์ /?edit=<designId> ที่กดจาก CustomList.jsx
      มี id นี้ = กำลังแก้ design เดิม (PATCH), ไม่มี = สร้างใหม่ (POST) */
@@ -135,6 +143,25 @@ const CustomDesign = () => {
           description: design.design_description || '',
           preset: design.preset || 1,
         }));
+
+        // มีรูป AI ที่เซฟไว้ → โชว์แทน 3D (ใช้ components ที่ตัดส่วนเกินแล้ว ให้ตรงกับตัวเลือกที่เติมให้)
+        if (design.preview_image_url) {
+          const shownComponents = [baseComponent, ...flowerComponents.slice(0, 3)].filter(Boolean);
+          setSavedPreviewImage({
+            url: design.preview_image_url,
+            components: shownComponents.map((c) => ({
+              inventory_item_id: c.inventory_item_id?._id,
+              quantity: c === baseComponent ? 1 : c.quantity,
+            })),
+            caption: {
+              base: baseComponent?.inventory_item_id?.name || '',
+              flowers: flowerComponents.slice(0, 3).map((c) => ({
+                name: c.inventory_item_id?.name,
+                quantity: c.quantity,
+              })),
+            },
+          });
+        }
       } catch (error) {
         console.error("Failed to load design for editing", error);
         setSaveError("Could not load the bouquet you're trying to edit.");
@@ -179,6 +206,44 @@ const CustomDesign = () => {
     return components;
   };
 
+  // AI Preview (ต้องเรียกก่อน if (isLoading) return ด้านล่าง ตามกฎของ hook)
+  const { user } = useAuth();
+  const preview = useDesignPreview({
+    components: selectionsToComponents(selections),
+    selections,
+    user,
+    onRestoreSelections: setSelections,
+    savedImage: savedPreviewImage,
+  });
+
+  // มาจาก Ask AI (กด Generate preview แล้วยืนยัน) → navigate("/", { state: { aiDesign, autoPreview } })
+  // ใช้ location.key เป็นตัวบอก "มีการ navigate ใหม่" เพราะ key เปลี่ยนทุกครั้ง แม้อยู่หน้า Home อยู่แล้ว (/ → /)
+  // (แบบเดิมเทียบค่าตอน render แล้วพลาดกรณีเปิดแชทจากหน้า Home: ส่วนนี้ไม่ถูกสร้างใหม่ ต้อง refresh ถึงทำงาน)
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const aiDesign = location.state?.aiDesign;
+    if (!aiDesign) return;
+
+    const [f1, f2, f3] = aiDesign.flowers;
+    const aiSelections = {
+      baseId: aiDesign.base._id,
+      flower1Id: f1?._id || '', flower1Qty: f1?.quantity || 1,
+      flower2Id: f2?._id || '', flower2Qty: f2?.quantity || 1,
+      flower3Id: f3?._id || '', flower3Qty: f3?.quantity || 1,
+    };
+    // ข้อมูลมาจาก router (ภายนอก component) → เติม dropdown ใน effect
+    setSelections(aiSelections);
+    document.getElementById('customDesign')?.scrollIntoView({ behavior: 'smooth' });
+    // ส่งช่อไปตรงๆ เพราะ state ของ dropdown ยังไม่อัปเดตในรอบนี้
+    if (location.state.autoPreview) {
+      preview.generate({ components: selectionsToComponents(aiSelections), selections: aiSelections });
+    }
+    // ล้าง state ใน URL history → refresh แล้วไม่สร้างรูปซ้ำ
+    navigate('.', { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
   const handleConfirmSave = async (e) => {
     e.preventDefault();
     setSaveError('');
@@ -191,15 +256,26 @@ const CustomDesign = () => {
       // กดครั้งแรกแล้วชน → โชว์คำเตือน กดอีกครั้ง (preset เดิม) = ยืนยันเซฟทับ
       overwrite: presetConflict?.preset === saveFormData.preset,
       components: selectionsToComponents(selections),
+      // รูป AI ล่าสุด (ถ้ามี) เก็บไปกับช่อนี้ · backend อัปขึ้น Vercel Blob แล้วเก็บ URL
+      ...(preview.imageToSave && {
+        preview_image: preview.imageToSave.image,
+        preview_prompt_version: preview.imageToSave.promptVersion,
+      }),
     };
 
     try {
+      const saved = editingDesignId
+        ? await updateDesign(editingDesignId, payload)
+        : await createDesign(payload);
       if (editingDesignId) {
-        await updateDesign(editingDesignId, payload);
         setSearchParams({}); // เอา ?edit=<id> ออกจาก URL หลังแก้เสร็จ กลับเป็นโหมดสร้างใหม่
-      } else {
-        await createDesign(payload);
       }
+      // image_saved false = ช่อเซฟแล้ว แต่รูปอัปไม่สำเร็จ (ไม่ถือว่า error)
+      setSaveNotice(
+        saved.image_saved === false
+          ? 'Bouquet saved, but the preview photo could not be saved. You can try again later.'
+          : 'Bouquet saved.',
+      );
 
       setIsModalOpen(false);
       setSaveFormData({ name: '', description: '', preset: 1 });
@@ -230,16 +306,30 @@ const CustomDesign = () => {
   );
 
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-125 font-body text-primary">Loading designer...</div>;
+    return <div id="customDesign" className="flex justify-center items-center min-h-125 font-body text-primary">Loading designer...</div>;
   }
 
   return (
-    <div className="w-full bg-tertiary font-body text-neutral p-4 lg:p-12">
+    // id ให้ลิงก์ /#customDesign (Edit จาก CustomList) และ Ask AI เลื่อนมาที่ส่วนนี้ได้
+    <div id="customDesign" className="w-full bg-tertiary font-body text-neutral p-4 lg:p-12">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
         
         {/* === คอลัมน์ซ้าย: Preview Image (ขยายเต็มกรอบ / เอา Hover ออก) === */}
         <div className="relative bg-secondary rounded-3xl p-0 flex flex-col justify-center items-center min-h-100 lg:min-h-130 shadow-sm border border-black/5 overflow-hidden">
-          
+          {preview.isGenerating && <PreviewLoading />}
+
+          {/* มีรูป AI → โชว์รูปแทน 3D (กด "View 3D" กลับมาได้) */}
+          {preview.shown ? (
+            <PreviewImage
+              entry={preview.shown}
+              isStale={preview.isStale}
+              isFromHistory={preview.isFromHistory}
+              isGenerating={preview.isGenerating}
+              onRegenerate={() => preview.generate({ force: true })}
+              onShow3D={preview.hidePreview}
+            />
+          ) : (
+          <>
           <div className="w-full h-full flex justify-center items-center overflow-hidden rounded-3xl">
             <model-viewer
               src={flowerModel}
@@ -268,7 +358,14 @@ const CustomDesign = () => {
               </svg>
               <span>Drag to Rotate</span>
             </div>
+          </>
+          )}
 
+          <PreviewHistory
+            history={preview.history}
+            shownId={preview.shown?.id}
+            onPick={preview.showFromHistory}
+          />
         </div>
 
         {/* === คอลัมน์ขวา: ส่วนเลือกข้อมูล (Dropdown) และปุ่ม === */}
@@ -397,13 +494,37 @@ const CustomDesign = () => {
             <button 
               onClick={() => {
                 setPresetConflict(null); // เปิด modal ใหม่ เริ่มจากยังไม่ชน preset
+                setSaveNotice('');
                 setIsModalOpen(true);
               }}
               className="px-8 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all cursor-pointer"
             >
               Save
             </button>
+            {/* AI Preview: สร้างรูปช่อตามที่เลือก · โควตา 3 รูป/วัน/คน */}
+            <button
+              onClick={() => preview.generate()}
+              disabled={!user || preview.isGenerating}
+              title={user ? 'Generate a photo of this bouquet with AI' : 'Log in to preview'}
+              className="px-8 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {preview.isGenerating ? 'Previewing...' : 'Preview'}
+              {preview.quota && (
+                <span className="ml-2 text-xs font-normal opacity-70">
+                  {preview.quota.remaining}/{preview.quota.limit}
+                </span>
+              )}
+            </button>
           </div>
+          {!user && (
+            <p className="mt-3 text-xs text-neutral/70">Log in to preview your bouquet as an AI photo.</p>
+          )}
+          {preview.error && (
+            <p className="mt-3 text-sm text-red-600">{preview.error}</p>
+          )}
+          {saveNotice && (
+            <p className="mt-3 text-sm text-primary">{saveNotice}</p>
+          )}
         </div>
       </div>
 
@@ -506,6 +627,14 @@ const CustomDesign = () => {
                   </div>
                 </div>
               </div>
+              {/* แจ้งว่ารูป AI จะถูกเซฟไปด้วยไหม (ไม่บังคับ Preview ใหม่ แค่บอกถ้ารูปเป็นของช่อก่อนหน้า) */}
+              {preview.imageToSave && (
+                <p className="text-center text-xs text-neutral/70">
+                  {preview.imageToSaveIsStale
+                    ? 'Your latest preview photo (from a previous selection) will be saved with this bouquet.'
+                    : 'Your preview photo will be saved with this bouquet.'}
+                </p>
+              )}
               {presetConflict && (
                 <p className="text-center text-sm text-amber-700">
                   Preset {presetConflict.preset} already has "{presetConflict.name}".
