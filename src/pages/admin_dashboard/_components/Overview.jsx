@@ -557,10 +557,10 @@ export default function Overview() {
                     {/* หัวตาราง: สีเดียวกับหน้า Orders / ใส่สีพื้นที่ th ทุกช่อง เพื่อไม่ให้แถวที่เลื่อนผ่านโผล่ทะลุตอน sticky */}
                     <TableHeader className="sticky top-0 z-10 [&_th]:bg-[#F4F7F8] [&_th]:shadow-[inset_0_-1px_0_#E1E3E7]">
                       <TableRow className="border-0 hover:bg-transparent">
-                        <TableHead className="px-5 text-xs font-semibold uppercase tracking-wide text-[#667092]">Order ID</TableHead>
-                        <TableHead className="px-5 text-xs font-semibold uppercase tracking-wide text-[#667092]">Customer ID</TableHead>
-                        <TableHead className="px-5 text-xs font-semibold uppercase tracking-wide text-[#667092]">Products</TableHead>
-                        <TableHead className="px-5 text-xs font-semibold uppercase tracking-wide text-[#667092]">Status</TableHead>
+                        <TableHead className="px-5 text-center text-xs font-semibold uppercase tracking-wide text-[#667092]">Order ID</TableHead>
+                        <TableHead className="px-5 text-center text-xs font-semibold uppercase tracking-wide text-[#667092]">Customer ID</TableHead>
+                        <TableHead className="px-5 text-center text-xs font-semibold uppercase tracking-wide text-[#667092]">Products</TableHead>
+                        <TableHead className="px-5 text-center text-xs font-semibold uppercase tracking-wide text-[#667092]">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -594,8 +594,8 @@ export default function Overview() {
                       {/* แถว order: เส้นคั่นบาง + พื้นจางตอนชี้เมาส์ แบบเดียวกับหน้า Orders */}
                       {recentOrderList.map((order) => (
                         <TableRow key={order.id} className="border-b border-[#ECEDEF] hover:bg-[#FCFDFD]">
-                          <TableCell className="px-5 py-4 font-semibold">{order.order_id}</TableCell>
-                          <TableCell className="px-5 py-4 text-[#667092]">{order.customer_id}</TableCell>
+                          <TableCell className="px-5 py-4 text-center font-semibold">{order.order_id}</TableCell>
+                          <TableCell className="px-5 py-4 text-center text-[#667092]">{order.customer_id}</TableCell>
                           <TableCell className="px-5 py-4">
                             <ul className="list-disc space-y-0.5 pl-4">
                               {order.items.map((item) => (
@@ -605,7 +605,7 @@ export default function Overview() {
                               ))}
                             </ul>
                           </TableCell>
-                          <TableCell className="px-5 py-4">
+                          <TableCell className="px-5 py-4 text-center">
                             {/* ป้ายสีตาม status ชื่อที่แสดง (เช่น "Pending") ใช้จาก config ของกราฟ Shipment Status */}
                             <span
                               className={
