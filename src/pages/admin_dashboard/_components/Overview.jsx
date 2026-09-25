@@ -38,7 +38,10 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
-import { SquarePen, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+
+import { useAdminOrders } from "../../../hooks/useAdminOrders"; // hook เดียวกับหน้า Orders ใช้ดึง Recent Order
+import { api } from "../../../context/AuthContext"; // axios ที่แนบ cookie (token) ไปกับทุก request ให้อัตโนมัติ
 
 //  data สำหรับ graph Sale Statistic
 const SaleStatisticChartData = [
@@ -151,24 +154,25 @@ const SaleStatisticChartConfig = {
   },
 };
 
+// config ของกราฟ Shipment Status: ชื่อ key ต้องตรงกับ order_status ใน order.model.js
 const ShipmentStatusChartConfig = {
   orders: {
     label: "Orders",
   },
-  delivered: {
-    label: "Delivered",
+  pending: {
+    label: "Pending",
     color: "var(--chart-1)",
-  },
-  shipping: {
-    label: "Shipping",
-    color: "var(--chart-2)",
   },
   processing: {
     label: "Processing",
+    color: "var(--chart-2)",
+  },
+  shipped: {
+    label: "Shipped",
     color: "var(--chart-3)",
   },
-  pending: {
-    label: "Pending",
+  completed: {
+    label: "Completed",
     color: "var(--chart-4)",
   },
   cancelled: {
@@ -177,75 +181,108 @@ const ShipmentStatusChartConfig = {
   },
 };
 
-// Recent Order table data
-const recentOrders = [
-  {
-    orderId: "#122",
-    customerId: "#122",
-    products: ["Rose x10", "Lily x10", "Mali x10"],
-    status: "Delivery",
-  },
-  {
-    orderId: "#123",
-    customerId: "#124",
-    products: ["Rose x10", "Lily x10", "Mali x10"],
-    status: "Delivery",
-  },
-];
 
-// Shipment Status
-const ShipmentPieChartData = [
-  { status: "delivered", orders: 275, fill: "var(--color-delivered)" },
-  { status: "shipping", orders: 120, fill: "var(--color-shipping)" },
-  { status: "processing", orders: 90, fill: "var(--color-processing)" },
-  { status: "pending", orders: 45, fill: "var(--color-pending)" },
-  { status: "cancelled", orders: 20, fill: "var(--color-cancelled)" },
-];
-
-//Sale overview Chart
-const SaleChartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  chrome: {
-    label: "Chrome",
-    color: "var(--chart-1)",
-  },
-  safari: {
-    label: "Safari",
-    color: "var(--chart-2)",
-  },
-  firefox: {
-    label: "Firefox",
-    color: "var(--chart-3)",
-  },
-  edge: {
-    label: "Edge",
-    color: "var(--chart-4)",
-  },
-  other: {
-    label: "Other",
-    color: "var(--chart-5)",
+// config ของกราฟ Top 5 Flowers: ชื่อดอกไม้มาจาก backend (เปลี่ยนได้) เลยไม่ผูกสีกับชื่อ แต่ผูกสีกับอันดับแทน
+const TopFlowersChartConfig = {
+  quantity: {
+    label: "Used",
   },
 };
 
-const SalePieChartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 90, fill: "var(--color-other)" },
+// สีของอันดับ 1-5 (อันดับ 1 ใช้สีแรก)
+const TOP_FLOWER_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ];
-function editHandler(){
-  return(<></>)
-}
-function deleteHandler(){
-  return(<></>)
-}
 
 
 export default function Overview() {
   const [timeRange, setTimeRange] = React.useState("90d");
+
+  // Recent Order: ขอ order ใหม่สุด 10 รายการ (หน้า 1, ไม่กรอง) ส่ง limit เองเพื่อไม่ให้ผูกกับ PAGE_SIZE ของหน้า Orders
+  const { orders: recentOrderList, isLoading, error } = useAdminOrders({
+    page: 1,
+    status: "all",
+    search: "",
+    limit: 10,
+  });
+
+  // Shipment Status: ข้อมูลกราฟวงกลม เริ่มเป็น array ว่าง รอโหลดจาก backend
+  const [shipmentChartData, setShipmentChartData] = React.useState([]);
+  const [isShipmentLoading, setIsShipmentLoading] = React.useState(true); // true ระหว่างรอ backend ตอบ
+  const [shipmentError, setShipmentError] = React.useState(""); // ข้อความ error ถ้าโหลดไม่สำเร็จ
+
+  // โหลดจำนวน order แยกตาม status ครั้งเดียวตอนเปิดหน้า
+  React.useEffect(() => {
+    async function fetchOrderStatusCount() {
+      setIsShipmentLoading(true);
+      setShipmentError(""); // ล้าง error เก่าก่อนโหลดใหม่
+      try {
+        const res = await api.get("/dashboard/order-status"); // ได้ { success, data: [{ status, count }, ...] }
+
+        // แปลงเป็นหน้าตาที่กราฟใช้: orders = จำนวน, fill = สีตาม status จาก ShipmentStatusChartConfig
+        const chartData = res.data.data.map((item) => {
+          return {
+            status: item.status,
+            orders: item.count,
+            fill: "var(--color-" + item.status + ")", // เช่น var(--color-pending)
+          };
+        });
+
+        setShipmentChartData(chartData); // เก็บลง state แล้วกราฟจะวาดใหม่เอง
+      } catch (err) {
+        console.error(err);
+        setShipmentError("Failed to load order status. Please try again."); // เอาไปแสดงในกล่องกราฟ
+      } finally {
+        setIsShipmentLoading(false); // สำเร็จหรือพังก็เลิกโหลด
+      }
+    }
+
+    fetchOrderStatusCount();
+  }, []); // [] = ทำครั้งเดียวตอนเปิดหน้า
+
+  // รวมจำนวน order ทุก status ถ้าได้ 0 แปลว่ายังไม่มี order เลย (ใช้ตัดสินว่าจะแสดง "No orders")
+  let totalShipmentOrders = 0;
+  shipmentChartData.forEach((item) => {
+    totalShipmentOrders = totalShipmentOrders + item.orders;
+  });
+
+  // Top 5 Flowers: ข้อมูลกราฟวงกลม เริ่มเป็น array ว่าง รอโหลดจาก backend
+  const [topFlowersChartData, setTopFlowersChartData] = React.useState([]);
+  const [isTopFlowersLoading, setIsTopFlowersLoading] = React.useState(true); // true ระหว่างรอ backend ตอบ
+  const [topFlowersError, setTopFlowersError] = React.useState(""); // ข้อความ error ถ้าโหลดไม่สำเร็จ
+
+  // โหลดดอกไม้ที่ถูกใช้มากที่สุด 5 อันดับ ครั้งเดียวตอนเปิดหน้า
+  React.useEffect(() => {
+    async function fetchTopFlowers() {
+      setIsTopFlowersLoading(true);
+      setTopFlowersError(""); // ล้าง error เก่าก่อนโหลดใหม่
+      try {
+        const res = await api.get("/dashboard/top-flowers"); // ได้ { success, data: [{ name, quantity }, ...] } เรียงมากไปน้อยแล้ว
+
+        // แปลงเป็นหน้าตาที่กราฟใช้: เติม fill = สีตามอันดับ (index 0 = อันดับ 1)
+        const chartData = res.data.data.map((item, index) => {
+          return {
+            name: item.name,
+            quantity: item.quantity,
+            fill: TOP_FLOWER_COLORS[index],
+          };
+        });
+
+        setTopFlowersChartData(chartData); // เก็บลง state แล้วกราฟจะวาดใหม่เอง
+      } catch (err) {
+        console.error(err);
+        setTopFlowersError("Failed to load top flowers. Please try again."); // เอาไปแสดงในกล่องกราฟ
+      } finally {
+        setIsTopFlowersLoading(false); // สำเร็จหรือพังก็เลิกโหลด
+      }
+    }
+
+    fetchTopFlowers();
+  }, []); // [] = ทำครั้งเดียวตอนเปิดหน้า
 
   const filteredData = SaleStatisticChartData.filter((item) => {
     const date = new Date(item.date);
@@ -455,18 +492,49 @@ export default function Overview() {
                   <CardDescription>Current shipment breakdown</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 pb-0">
-                  <ChartContainer
-                    config={ShipmentStatusChartConfig}
-                    className="mx-auto aspect-square max-h-[300px]"
-                  >
-                    <PieChart>
-                      <Pie data={ShipmentPieChartData} dataKey="orders" />
-                      <ChartLegend
-                        content={<ChartLegendContent nameKey="status" />}
-                        className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"
-                      />
-                    </PieChart>
-                  </ChartContainer>
+                  {/* กำลังโหลด */}
+                  {isShipmentLoading && (
+                    <p className="py-16 text-center text-sm text-[#8A91A0]">Loading...</p>
+                  )}
+
+                  {/* โหลดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
+                  {!isShipmentLoading && shipmentError && (
+                    <p className="py-16 text-center text-sm text-[#9A4D4D]">{shipmentError}</p>
+                  )}
+
+                  {/* โหลดสำเร็จแต่ยังไม่มี order เลย (ทุก status เป็น 0) */}
+                  {!isShipmentLoading && !shipmentError && totalShipmentOrders === 0 && (
+                    <p className="py-16 text-center text-sm text-[#8A91A0]">No orders</p>
+                  )}
+
+                  {/* มีข้อมูล: แสดงกราฟ + legend */}
+                  {!isShipmentLoading && !shipmentError && totalShipmentOrders > 0 && (
+                    <>
+                      <ChartContainer
+                        config={ShipmentStatusChartConfig}
+                        className="mx-auto aspect-square max-h-[300px]"
+                      >
+                        <PieChart>
+                          <Pie data={shipmentChartData} dataKey="orders" />
+                        </PieChart>
+                      </ChartContainer>
+
+                      {/* legend เขียนเอง: จุดสี + ชื่อ status + จำนวน order (ชิ้นเล็กในกราฟอ่านยาก เลยบอกตัวเลขตรงนี้) */}
+                      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 pb-4 text-xs">
+                        {shipmentChartData.map((item) => (
+                          <li key={item.status} className="flex items-center gap-1.5">
+                            {/* ใช้สีกับชื่อจาก config ตัวเดียวกับกราฟ สีจึงตรงกับชิ้นในวงกลม */}
+                            <span
+                              className="h-2 w-2 rounded-[2px]"
+                              style={{ backgroundColor: ShipmentStatusChartConfig[item.status].color }}
+                            />
+                            <span>{ShipmentStatusChartConfig[item.status].label}</span>
+                            <span className="font-semibold">{item.orders}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -475,80 +543,139 @@ export default function Overview() {
           {/* third row graph */}
           <div className="flex flex-col md:flex-row gap-2">
             {/* Recent Order */}
-            <div className="mt-4 md:w-[70%] h-fit">
+            <div className="mt-4 md:w-[70%] flex flex-col">
+              {/* แก้ status / ลบ order ทำที่หน้า Orders ที่เดียว หน้านี้แสดงอย่างเดียว (ลิงก์ View all อยู่แถวท้ายตาราง) */}
               <h2 className="text-2xl font-semibold pb-2">Recent Order</h2>
 
-              <Card className="bg-background">
+              {/* จอใหญ่: กล่องสูงเท่ากล่อง Sale Overview (absolute ไม่ดันความสูงแถว) แล้ว scroll ในกล่อง / จอเล็ก: สูงสุด 400px */}
+              {/* py-0 ให้หัวตารางชิดขอบบน, ปิด overflow ของ div ที่ห่อ Table เพื่อให้ sticky อิงกับการ scroll ของ Card */}
+              <div className="relative md:flex-1">
+              <Card className="bg-background py-0 max-h-[400px] overflow-y-auto md:max-h-none md:absolute md:inset-0 [&_[data-slot=table-container]]:overflow-visible">
                 <CardContent className="p-0">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-10 bg-background">
                       <TableRow>
                         <TableHead>OrderID</TableHead>
                         <TableHead>Customer ID</TableHead>
                         <TableHead>Products item</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-center">Edit</TableHead>
-                        <TableHead className="text-center">Delete</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recentOrders.map((order, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{order.orderId}</TableCell>
-                          <TableCell>{order.customerId}</TableCell>
+                      {/* กำลังโหลดครั้งแรก (ตอน refetch หลังแก้/ลบยังมีข้อมูลเดิมอยู่ จึงไม่ต้องแสดง) */}
+                      {isLoading && recentOrderList.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-10 text-center text-[#8A91A0]">
+                            Loading orders...
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      {/* โหลดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
+                      {!isLoading && error && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-10 text-center text-[#9A4D4D]">
+                            {error}
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      {/* โหลดเสร็จแล้วแต่ยังไม่มี order ในระบบ */}
+                      {!isLoading && !error && recentOrderList.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-10 text-center text-[#8A91A0]">
+                            No orders
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      {recentOrderList.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell>{order.order_id}</TableCell>
+                          <TableCell>{order.customer_id}</TableCell>
                           <TableCell>
                             <ul className="list-disc pl-4">
-                              {order.products.map((product) => (
-                                <li key={product}>{product}</li>
+                              {order.items.map((item) => (
+                                <li key={item.product_id}>
+                                  {item.name} x{item.quantity}
+                                </li>
                               ))}
                             </ul>
                           </TableCell>
                           <TableCell>{order.status}</TableCell>
-                          <TableCell className="text-center">
-                            <button
-                              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white border border-neutral/20 text-neutral hover:bg-secondary transition-colors hover:cursor-pointer"
-                              aria-label="Edit order"
-                            >
-                              <SquarePen className="w-4 h-4" />
-                            </button>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <button
-                              className="w-9 h-9 rounded-xl flex items-center justify-center bg-destructive text-white hover:opacity-90 transition-opacity hover:cursor-pointer"
-                              aria-label="Delete order"
-                              
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </TableCell>
                         </TableRow>
                       ))}
+
+                      {/* แถวสุดท้าย: เห็นเมื่อ scroll ถึงล่างสุด พาไปหน้า Orders (แสดงเฉพาะตอนมี order) */}
+                      {recentOrderList.length > 0 && (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={4} className="py-4 text-center">
+                            <Link
+                              to="/admindashboard/order-list"
+                              className="text-sm font-semibold text-[#475486] hover:underline"
+                            >
+                              View all orders
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
               </Card>
+              </div>
             </div>
-            {/* Sale Overview */}
+            {/* Sale Overview: ดอกไม้ที่ถูกใช้มากที่สุด 5 อันดับ (all time, ไม่นับ order ที่ cancelled) */}
             <div className="mt-4 md:w-[30%] h-full">
               <h2 className="text-2xl font-semibold pb-2">Sale Overview</h2>
               <Card className="flex flex-col bg-background">
                 <CardHeader className="items-center pb-0">
-                  <CardTitle>Pie Chart - Legend</CardTitle>
-                  <CardDescription>January - June 2024</CardDescription>
+                  <CardTitle>Most Used Flowers</CardTitle>
+                  <CardDescription>All time (excluding cancelled orders)</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 pb-0">
-                  <ChartContainer
-                    config={SaleChartConfig}
-                    className="mx-auto aspect-square max-h-[300px]"
-                  >
-                    <PieChart>
-                      <Pie data={SalePieChartData} dataKey="visitors" />
-                      <ChartLegend
-                        content={<ChartLegendContent nameKey="browser" />}
-                        className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"
-                      />
-                    </PieChart>
-                  </ChartContainer>
+                  {/* กำลังโหลด */}
+                  {isTopFlowersLoading && (
+                    <p className="py-16 text-center text-sm text-[#8A91A0]">Loading...</p>
+                  )}
+
+                  {/* โหลดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
+                  {!isTopFlowersLoading && topFlowersError && (
+                    <p className="py-16 text-center text-sm text-[#9A4D4D]">{topFlowersError}</p>
+                  )}
+
+                  {/* โหลดสำเร็จแต่ยังไม่มีดอกไม้ที่ถูกใช้เลย (backend ส่ง array ว่างมา) */}
+                  {!isTopFlowersLoading && !topFlowersError && topFlowersChartData.length === 0 && (
+                    <p className="py-16 text-center text-sm text-[#8A91A0]">No data</p>
+                  )}
+
+                  {/* มีข้อมูล: แสดงกราฟ + legend */}
+                  {!isTopFlowersLoading && !topFlowersError && topFlowersChartData.length > 0 && (
+                    <>
+                      <ChartContainer
+                        config={TopFlowersChartConfig}
+                        className="mx-auto aspect-square max-h-[300px]"
+                      >
+                        <PieChart>
+                          <Pie data={topFlowersChartData} dataKey="quantity" nameKey="name" />
+                        </PieChart>
+                      </ChartContainer>
+
+                      {/* legend เขียนเองแบบเดียวกับ Shipment Status: จุดสี + ชื่อดอกไม้ + จำนวนที่ใช้ */}
+                      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 pb-4 text-xs">
+                        {topFlowersChartData.map((item) => (
+                          <li key={item.name} className="flex items-center gap-1.5">
+                            <span
+                              className="h-2 w-2 rounded-[2px]"
+                              style={{ backgroundColor: item.fill }}
+                            />
+                            <span>{item.name}</span>
+                            <span className="font-semibold">{item.quantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>

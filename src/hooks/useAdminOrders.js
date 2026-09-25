@@ -65,7 +65,8 @@ function mapOrderFromApi(order) {
 const PAGE_SIZE = 10; // จำนวน order ต่อหน้า
 
 // page, status, search มาจาก state ใน OrderList.jsx เปลี่ยนเมื่อไหร่จะ fetch ใหม่ให้อัตโนมัติ
-export function useAdminOrders({ page, status, search }) {
+// limit ไม่ส่งมา = ใช้ PAGE_SIZE (หน้า Orders), หน้า Dashboard (Overview.jsx) ส่ง limit มาเองเพื่อไม่ให้ผูกกับ PAGE_SIZE
+export function useAdminOrders({ page, status, search, limit = PAGE_SIZE }) {
   const [orders, setOrders] = useState([]); // เริ่มเป็น array ว่าง รอ fetch จาก backend มาเติม
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 }); // ข้อมูลการแบ่งหน้าจาก backend
   const [isLoading, setIsLoading] = useState(true); // true ระหว่างรอ backend ตอบ
@@ -78,7 +79,7 @@ export function useAdminOrders({ page, status, search }) {
     try {
       const result = await getOrders({
         page,
-        limit: PAGE_SIZE,
+        limit, // จำนวน order ที่ขอ (ค่าเริ่มต้นคือ PAGE_SIZE)
         status, // "all" = ไม่กรอง (backend จัดการให้)
         search: search.trim() || undefined, // ช่องว่างล้วนไม่ต้องส่งไป (undefined = axios ไม่ใส่ใน URL)
       });
@@ -95,7 +96,7 @@ export function useAdminOrders({ page, status, search }) {
   // fetch ใหม่ทุกครั้งที่เปลี่ยนหน้า เปลี่ยน status filter หรือพิมพ์คำค้นหา
   useEffect(() => {
     fetchOrders();
-  }, [page, status, search]);
+  }, [page, status, search, limit]);
 
   return {
     orders,
