@@ -27,8 +27,13 @@ export function PreviewImage({ entry, isStale, isFromHistory, isGenerating, onRe
       {/* caption: จำนวนจริง (AI นับดอกไม่เป๊ะ ต้องบอกของจริงเสมอ) */}
       <div className="px-4 py-3 text-xs sm:text-sm text-neutral space-y-1">
         <p>
-          <span className="font-semibold text-primary">Size {caption.size}</span>
-          {" · "}
+          {/* รูปที่เซฟไว้ (โหมด Edit) ไม่มีข้อมูลไซส์ */}
+          {caption.size && (
+            <>
+              <span className="font-semibold text-primary">Size {caption.size}</span>
+              {" · "}
+            </>
+          )}
           {caption.base}
         </p>
         <p>{caption.flowers.map((f) => `${f.name} × ${f.quantity}`).join(" · ")}</p>

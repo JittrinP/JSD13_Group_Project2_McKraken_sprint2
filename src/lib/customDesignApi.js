@@ -36,7 +36,9 @@ export async function getDesign(designId) {
   return res.json();
 }
 
-// เซฟ design ใหม่ (POST) — designData: { design_name, design_description, preset (1-5), overwrite?, components: [{ inventory_item_id, quantity }] }
+// เซฟ design ใหม่ (POST) — designData: { design_name, design_description, preset (1-5), overwrite?, components: [{ inventory_item_id, quantity }],
+//                                      preview_image? (data URL รูป AI), preview_prompt_version? }
+// คืน design + image_saved (true = รูปขึ้นแล้ว / false = ช่อเซฟได้แต่รูปอัปไม่สำเร็จ / null = ไม่ได้ส่งรูป)
 export async function createDesign(designData) {
   const res = await fetch(`${API_BASE}/custom-design`, {
     method: "POST",
@@ -48,7 +50,7 @@ export async function createDesign(designData) {
   if (!res.ok) {
     throw apiError(res, data, "Failed to save custom design");
   }
-  return data.design;
+  return { ...data.design, image_saved: data.image_saved };
 }
 
 // แก้ design (PATCH) ส่งแค่ field ที่อยากแก้ก็ได้
@@ -63,7 +65,7 @@ export async function updateDesign(designId, designData) {
   if (!res.ok) {
     throw apiError(res, data, "Failed to update custom design");
   }
-  return data.design;
+  return { ...data.design, image_saved: data.image_saved };
 }
 
 // ลบ design (DELETE)

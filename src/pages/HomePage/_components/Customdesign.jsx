@@ -59,6 +59,10 @@ const CustomDesign = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // ข้อความหลังเซฟ เช่น เซฟช่อได้แต่อัปรูป AI ไม่สำเร็จ
+  const [saveNotice, setSaveNotice] = useState('');
+  // โหมด Edit: ช่อที่เปิดมามีรูป AI เซฟไว้ → { url, components, caption } ส่งให้ useDesignPreview โชว์
+  const [savedPreviewImage, setSavedPreviewImage] = useState(null);
 
   /* Edit mode: มาจากลิงก์ /?edit=<designId> ที่กดจาก CustomList.jsx
      มี id นี้ = กำลังแก้ design เดิม (PATCH), ไม่มี = สร้างใหม่ (POST) */
@@ -139,6 +143,25 @@ const CustomDesign = () => {
           description: design.design_description || '',
           preset: design.preset || 1,
         }));
+
+        // มีรูป AI ที่เซฟไว้ → โชว์แทน 3D (ใช้ components ที่ตัดส่วนเกินแล้ว ให้ตรงกับตัวเลือกที่เติมให้)
+        if (design.preview_image_url) {
+          const shownComponents = [baseComponent, ...flowerComponents.slice(0, 3)].filter(Boolean);
+          setSavedPreviewImage({
+            url: design.preview_image_url,
+            components: shownComponents.map((c) => ({
+              inventory_item_id: c.inventory_item_id?._id,
+              quantity: c === baseComponent ? 1 : c.quantity,
+            })),
+            caption: {
+              base: baseComponent?.inventory_item_id?.name || '',
+              flowers: flowerComponents.slice(0, 3).map((c) => ({
+                name: c.inventory_item_id?.name,
+                quantity: c.quantity,
+              })),
+            },
+          });
+        }
       } catch (error) {
         console.error("Failed to load design for editing", error);
         setSaveError("Could not load the bouquet you're trying to edit.");
@@ -190,6 +213,7 @@ const CustomDesign = () => {
     selections,
     user,
     onRestoreSelections: setSelections,
+    savedImage: savedPreviewImage,
   });
 
   const handleConfirmSave = async (e) => {
@@ -204,15 +228,26 @@ const CustomDesign = () => {
       // กดครั้งแรกแล้วชน → โชว์คำเตือน กดอีกครั้ง (preset เดิม) = ยืนยันเซฟทับ
       overwrite: presetConflict?.preset === saveFormData.preset,
       components: selectionsToComponents(selections),
+      // รูป AI ล่าสุด (ถ้ามี) เก็บไปกับช่อนี้ · backend อัปขึ้น Vercel Blob แล้วเก็บ URL
+      ...(preview.imageToSave && {
+        preview_image: preview.imageToSave.image,
+        preview_prompt_version: preview.imageToSave.promptVersion,
+      }),
     };
 
     try {
+      const saved = editingDesignId
+        ? await updateDesign(editingDesignId, payload)
+        : await createDesign(payload);
       if (editingDesignId) {
-        await updateDesign(editingDesignId, payload);
         setSearchParams({}); // เอา ?edit=<id> ออกจาก URL หลังแก้เสร็จ กลับเป็นโหมดสร้างใหม่
-      } else {
-        await createDesign(payload);
       }
+      // image_saved false = ช่อเซฟแล้ว แต่รูปอัปไม่สำเร็จ (ไม่ถือว่า error)
+      setSaveNotice(
+        saved.image_saved === false
+          ? 'Bouquet saved, but the preview photo could not be saved. You can try again later.'
+          : 'Bouquet saved.',
+      );
 
       setIsModalOpen(false);
       setSaveFormData({ name: '', description: '', preset: 1 });
@@ -430,6 +465,7 @@ const CustomDesign = () => {
             <button 
               onClick={() => {
                 setPresetConflict(null); // เปิด modal ใหม่ เริ่มจากยังไม่ชน preset
+                setSaveNotice('');
                 setIsModalOpen(true);
               }}
               className="px-8 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all cursor-pointer"
@@ -456,6 +492,9 @@ const CustomDesign = () => {
           )}
           {preview.error && (
             <p className="mt-3 text-sm text-red-600">{preview.error}</p>
+          )}
+          {saveNotice && (
+            <p className="mt-3 text-sm text-primary">{saveNotice}</p>
           )}
         </div>
       </div>
@@ -559,6 +598,14 @@ const CustomDesign = () => {
                   </div>
                 </div>
               </div>
+              {/* แจ้งว่ารูป AI จะถูกเซฟไปด้วยไหม (ไม่บังคับ Preview ใหม่ แค่บอกถ้ารูปเป็นของช่อก่อนหน้า) */}
+              {preview.imageToSave && (
+                <p className="text-center text-xs text-neutral/70">
+                  {preview.imageToSaveIsStale
+                    ? 'Your latest preview photo (from a previous selection) will be saved with this bouquet.'
+                    : 'Your preview photo will be saved with this bouquet.'}
+                </p>
+              )}
               {presetConflict && (
                 <p className="text-center text-sm text-amber-700">
                   Preset {presetConflict.preset} already has "{presetConflict.name}".
