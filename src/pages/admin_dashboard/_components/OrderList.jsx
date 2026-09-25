@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -10,19 +10,20 @@ import {
 } from "lucide-react";
 import { useAdminOrders } from "../../../hooks/useAdminOrders";
 
+// ค่า value ต้องตรงกับ enum order_status ใน backend (order.model.js)
 const statusOptions = [
   { value: "pending", label: "Pending" },
   { value: "processing", label: "Processing" },
-  { value: "delivery", label: "Delivery" },
-  { value: "delivered", label: "Delivered" },
+  { value: "shipped", label: "Shipped" }, // เดิม delivery
+  { value: "completed", label: "Completed" }, // เดิม delivered
   { value: "cancelled", label: "Cancelled" },
 ];
 
 const statusStyles = {
   pending: "bg-[#FFF4D6] text-[#916D18]",
   processing: "bg-[#E9EAFE] text-[#545C9E]",
-  delivery: "bg-[#E5F1F0] text-[#3D7770]",
-  delivered: "bg-[#E5F4E9] text-[#3B7B4D]",
+  shipped: "bg-[#E5F1F0] text-[#3D7770]", // ใช้สีเดิมของ delivery
+  completed: "bg-[#E5F4E9] text-[#3B7B4D]", // ใช้สีเดิมของ delivered
   cancelled: "bg-[#F8E6E6] text-[#9A4D4D]",
 };
 
@@ -47,28 +48,19 @@ function getStatusLabel(status) {
 }
 
 export default function OrderList() {
-  const { orders, updateOrderStatus, deleteOrder } = useAdminOrders();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1); // หน้าที่กำลังดูอยู่ ส่งให้ backend แบ่งหน้า
+  // backend กรองและแบ่งหน้าให้แล้ว orders ที่ได้มาคือแถวที่ต้องแสดงในหน้านี้เลย
+  const { orders, pagination, isLoading, error, updateOrderStatus, deleteOrder } = useAdminOrders({
+    page,
+    status: statusFilter,
+    search: searchTerm,
+  });
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [editingStatus, setEditingStatus] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderToDelete, setOrderToDelete] = useState(null);
-
-  const filteredOrders = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-
-    return orders.filter((order) => {
-      const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-      const matchesSearch =
-        !query ||
-        [order.order_id, order.customer_id, order.customer_name, order.customer_email]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(query));
-
-      return matchesStatus && matchesSearch;
-    });
-  }, [orders, searchTerm, statusFilter]);
 
   function startEditing(order) {
     setEditingOrderId(order.order_id);
@@ -76,16 +68,28 @@ export default function OrderList() {
   }
 
   async function saveStatus(orderId) {
-    await updateOrderStatus(orderId, editingStatus);
-    setEditingOrderId(null);
+    try {
+      await updateOrderStatus(orderId, editingStatus); // ยิง PATCH แล้ว refetch ลิสต์ใหม่ (อยู่ใน hook)
+      setEditingOrderId(null); // ปิดโหมดแก้ไขเมื่อบันทึกสำเร็จเท่านั้น
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update order status. Please try again."); // พังให้แจ้งผู้ใช้ และค้างโหมดแก้ไขไว้ให้ลองใหม่
+    }
   }
 
   async function handleDelete() {
     if (!orderToDelete) return;
 
-    await deleteOrder(orderToDelete.order_id);
-    if (selectedOrder?.order_id === orderToDelete.order_id) setSelectedOrder(null);
-    setOrderToDelete(null);
+    try {
+      await deleteOrder(orderToDelete.id); // ส่ง _id จริงไปลบใน database แล้ว refetch (อยู่ใน hook)
+      if (selectedOrder?.id === orderToDelete.id) setSelectedOrder(null); // ถ้าเปิดดู order นี้อยู่ให้ปิด modal
+      if (orders.length === 1 && page > 1) setPage(page - 1); // ลบตัวสุดท้ายของหน้า ให้ถอยไปหน้าก่อน จะได้ไม่เจอหน้าว่าง
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete order. Please try again.");
+    } finally {
+      setOrderToDelete(null); // ปิด popup ยืนยันการลบ ไม่ว่าจะสำเร็จหรือไม่
+    }
   }
 
   function renderStatus(order) {
@@ -106,7 +110,7 @@ export default function OrderList() {
           </select>
           <button
             type="button"
-            onClick={() => saveStatus(order.order_id)}
+            onClick={() => saveStatus(order.id)} // ส่ง _id จริงของ MongoDB ไปให้ backend
             className="rounded-md p-1.5 text-[#3B7B4D] hover:bg-[#E5F4E9]"
             aria-label={`Save status for ${order.order_id}`}
             title="Save status"
@@ -148,7 +152,7 @@ export default function OrderList() {
             </p>
           </div>
           <div className="rounded-xl bg-[#F4F7F8] px-4 py-3 text-sm text-[#586158]">
-            <span className="font-semibold text-[#475486]">{filteredOrders.length}</span> orders shown
+            <span className="font-semibold text-[#475486]">{pagination.total}</span> orders found {/* จำนวนทั้งหมดทุกหน้า จาก backend */}
           </div>
         </div>
 
@@ -157,8 +161,11 @@ export default function OrderList() {
             <Search className="pointer-events-none absolute left-3 size-4 text-[#8B91A0]" />
             <input
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search order or customer..."
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setPage(1); // ค้นหาใหม่ต้องเริ่มที่หน้า 1 เสมอ
+              }}
+              placeholder="Search order number..." // backend ค้นได้แค่เลข order
               className="h-10 w-full rounded-lg border border-[#D9DDE3] bg-white pl-10 pr-3 text-sm text-[#475486] outline-none placeholder:text-[#9AA0AA] focus:border-[#475486]"
               type="search"
             />
@@ -166,7 +173,10 @@ export default function OrderList() {
           <label className="relative sm:w-48">
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => {
+                setStatusFilter(event.target.value);
+                setPage(1); // เปลี่ยนตัวกรองต้องเริ่มที่หน้า 1 เสมอ
+              }}
               className="h-10 w-full appearance-none rounded-lg border border-[#D9DDE3] bg-white px-3 pr-9 text-sm text-[#475486] outline-none focus:border-[#475486]"
               aria-label="Filter orders by status"
             >
@@ -195,8 +205,8 @@ export default function OrderList() {
                 </tr>
               </thead>
               <tbody className="text-sm text-[#475486]">
-                {filteredOrders.map((order) => (
-                  <tr key={order.order_id} className="border-b border-[#ECEDEF] last:border-0 hover:bg-[#FCFDFD]">
+                {orders.map((order) => (
+                  <tr key={order.id} className="border-b border-[#ECEDEF] last:border-0 hover:bg-[#FCFDFD]">
                     <td className="px-5 py-4 font-semibold">{order.order_id}</td>
                     <td className="px-5 py-4">
                       <p className="font-medium text-[#475486]">{order.customer_name}</p>
@@ -242,13 +252,51 @@ export default function OrderList() {
             </table>
           </div>
 
-          {filteredOrders.length === 0 && (
+          {/* แสดงระหว่างรอ backend ตอบ (เฉพาะตอนยังไม่มีข้อมูล จะได้ไม่กระพริบตอน refetch) */}
+          {isLoading && orders.length === 0 && (
+            <div className="px-6 py-16 text-center text-sm text-[#8A91A0]">Loading orders...</div>
+          )}
+
+          {/* โหลดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
+          {!isLoading && error && (
+            <div className="px-6 py-16 text-center">
+              <p className="font-display text-xl text-[#9A4D4D]">{error}</p>
+            </div>
+          )}
+
+          {/* โหลดเสร็จแล้วแต่ไม่มี order ตรงกับตัวกรอง */}
+          {!isLoading && !error && orders.length === 0 && (
             <div className="px-6 py-16 text-center">
               <p className="font-display text-xl text-[#475486]">No orders found</p>
               <p className="mt-2 text-sm text-[#8A91A0]">Try another search or status filter.</p>
             </div>
           )}
         </div>
+
+        {/* ปุ่มเปลี่ยนหน้า แสดงเฉพาะตอนมีมากกว่า 1 หน้า */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-5 flex items-center justify-end gap-3 text-sm text-[#667092]">
+            <button
+              type="button"
+              onClick={() => setPage(page - 1)}
+              disabled={page <= 1} // หน้าแรกกดย้อนไม่ได้
+              className="h-9 rounded-lg border border-[#D9DDE3] px-4 font-semibold transition hover:bg-[#F4F7F8] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <span>
+              Page <span className="font-semibold text-[#475486]">{page}</span> of {pagination.totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage(page + 1)}
+              disabled={page >= pagination.totalPages} // หน้าสุดท้ายกดต่อไม่ได้
+              className="h-9 rounded-lg border border-[#D9DDE3] px-4 font-semibold transition hover:bg-[#F4F7F8] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedOrder && (

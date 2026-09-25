@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import '@google/model-viewer';
-import flowerModel from '../../../assets/flower.glb?url';
+const flowerModel = "https://rri4tg6y27zcjsqa.public.blob.vercel-storage.com/flower.glb";
 import { createDesign, updateDesign, getDesign } from '../../../lib/customDesignApi';
 import { useCart } from '../../../context/CartContext';
 
@@ -70,44 +70,34 @@ const CustomDesign = () => {
     const fetchInventory = async () => {
       setIsLoading(true);
       try {
-        // [INVENTORY TODO]: ตอนนี้ยัง hardcode รายการไว้ชั่วคราว (เลือกมาแค่บางส่วน ใน DB มีดอกไม้ 18 ชนิด)
-        // id ด้านล่างเป็น _id จริงที่ copy มาจาก MongoDB collection 'inventory_items' (DB FlowerShop)
-        // ⚠️ seed (productquery.mongodb.js) ลบข้อมูลแล้วสร้าง _id ใหม่แบบสุ่มทุกครั้งที่รัน ถ้ามีคน seed ใหม่ id พวกนี้จะใช้ไม่ได้ แล้ว Save จะ error
-        // คนที่ทำ inventory: ทำ GET /api/v1/inventory-items (ตอนนี้ inventory-items.routes.js ยังว่าง) แล้วเปลี่ยนตรงนี้เป็น fetch จาก API
-        //   - bases = category 'wrapping_paper' + 'vase', flowers = category 'flower'
-        //   - ใช้ _id ของแต่ละ item เป็น id ของ dropdown
-        //   - ค่า default ใน setSelections ด้านล่างก็ต้องเอามาจากข้อมูลที่ fetch ได้ (เช่น item ตัวแรกของแต่ละกลุ่ม)
-        setTimeout(() => {
-          setInventory({
-            // Bases: รวม wrapping_paper และ vase
-            bases: [
-              { id: '6ab0ef63fb9b2838d7c38a2f', name: 'Kraft Wrapping Paper' },
-              { id: '6ab0ef63fb9b2838d7c38a31', name: 'Korean Wrapping Paper' },
-              { id: '6ab0ef63fb9b2838d7c38a36', name: 'Satin Ribbon' },
-              { id: '6ab0ef63fb9b2838d7c38a37', name: 'Tall Glass Vase' }
-            ],
-            // Flowers: category 'flower'
-            flowers: [
-              { id: '6ab0ef63fb9b2838d7c38a2e', name: 'Ecuadorian Red Rose' },
-              { id: '6ab0ef63fb9b2838d7c38a30', name: 'Pink Tulip' },
-              { id: '6ab0ef63fb9b2838d7c38a33', name: 'Sunflower' },
-              { id: '6ab0ef63fb9b2838d7c38a34', name: 'Blue Hydrangea' },
-              { id: '6ab0ef63fb9b2838d7c38a38', name: "Baby's Breath" }
-            ]
-          });
+        // [UPDATE] ยิง API เพื่อขอ Inventory Items ทั้งหมดจาก Backend
+        // หากมี api instance (เช่น axios) จาก context สามารถเอามาใช้แทน fetch ได้เลย
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
+        const res = await fetch(`${apiUrl}/inventory-items`);
+        const data = await res.json();
 
-          // ตั้งค่า Default ตอนโหลดหน้าเว็บเสร็จ
-          // ถ้ามาจากปุ่ม edit แล้ว design เดิมโหลดเสร็จก่อน (prev.baseId มีค่าแล้ว) ห้ามเขียนทับ ไม่งั้น dropdown จะเด้งกลับเป็นค่า default
-          setSelections((prev) => prev.baseId ? prev : {
-            baseId: '6ab0ef63fb9b2838d7c38a2f', // Kraft Wrapping Paper
-            flower1Id: '6ab0ef63fb9b2838d7c38a2e', flower1Qty: 1, // Ecuadorian Red Rose
-            flower2Id: '6ab0ef63fb9b2838d7c38a33', flower2Qty: 1, // Sunflower
-            flower3Id: '6ab0ef63fb9b2838d7c38a30', flower3Qty: 1  // Pink Tulip
-          });
-          setIsLoading(false);
-        }, 800);
+        // [UPDATE] กรอง items ที่ได้จาก DB แยกเป็นหมวดหมู่ (bases และ flowers)
+        const fetchedBases = data.filter(item => item.category === 'wrapping_paper' || item.category === 'vase');
+        const fetchedFlowers = data.filter(item => item.category === 'flower');
+
+        setInventory({
+          bases: fetchedBases,
+          flowers: fetchedFlowers
+        });
+
+        // [UPDATE] ตั้งค่า Default ตอนโหลดหน้าเว็บเสร็จ (ใช้ _id จริงที่ดึงมาจาก DB ตัวแรกสุด)
+        setSelections((prev) => prev.baseId ? prev : {
+          baseId: fetchedBases.length > 0 ? fetchedBases[0]._id : '', 
+          flower1Id: fetchedFlowers.length > 0 ? fetchedFlowers[0]._id : '', flower1Qty: 1, 
+          // ป้องกัน error ถ้าของในสต็อกมีไม่ถึง 3 ชนิด
+          flower2Id: fetchedFlowers.length > 1 ? fetchedFlowers[1]._id : (fetchedFlowers.length > 0 ? fetchedFlowers[0]._id : ''), flower2Qty: 1, 
+          flower3Id: fetchedFlowers.length > 2 ? fetchedFlowers[2]._id : (fetchedFlowers.length > 0 ? fetchedFlowers[0]._id : ''), flower3Qty: 1  
+        });
+
+        setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch inventory", error);
+        setIsLoading(false); // [UPDATE] กัน Loading ค้างหากเกิด Error
       }
     };
     fetchInventory();
@@ -283,7 +273,7 @@ const CustomDesign = () => {
                   onChange={(e) => handleSelectionChange('baseId', e.target.value)}
                 >
                   {inventory.bases.map(item => (
-                    <option key={item.id} value={item.id}>{item.name}</option>
+                    <option key={item._id} value={item._id}>{item.name}</option>
                   ))}
                 </select>
                 <DropdownIcon />
@@ -301,7 +291,7 @@ const CustomDesign = () => {
                     onChange={(e) => handleSelectionChange('flower1Id', e.target.value)}
                   >
                     {inventory.flowers.map(item => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
+                      <option key={item._id} value={item._id}>{item.name}</option>
                     ))}
                   </select>
                   <DropdownIcon />
@@ -330,7 +320,7 @@ const CustomDesign = () => {
                     onChange={(e) => handleSelectionChange('flower2Id', e.target.value)}
                   >
                     {inventory.flowers.map(item => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
+                      <option key={item._id} value={item._id}>{item.name}</option>
                     ))}
                   </select>
                   <DropdownIcon />
@@ -359,7 +349,7 @@ const CustomDesign = () => {
                     onChange={(e) => handleSelectionChange('flower3Id', e.target.value)}
                   >
                     {inventory.flowers.map(item => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
+                      <option key={item._id} value={item._id}>{item.name}</option>
                     ))}
                   </select>
                   <DropdownIcon />

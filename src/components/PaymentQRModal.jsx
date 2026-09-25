@@ -63,7 +63,7 @@ export default function PaymentQRModal({
 
           {amount != null && (
             <p className="text-3xl font-bold font-display text-primary mb-4">
-              ฿ {Number(amount).toFixed(2)}
+              ฿{Number(amount).toFixed(2)}
             </p>
           )}
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, memo, useEffect } from "react";
 import { api } from "../../../context/AuthContext"; // ตรวจสอบ path ให้ตรงกับที่อยู่จริง
 import { getProducts } from "../../../lib/productApi"; // ตรวจสอบ path ให้ตรงกับที่อยู่จริง
+import SyncAiButton from "../../../components/SyncAiButton"; // ปุ่มให้ AI chatbot รู้จักสินค้าล่าสุด — base
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -85,40 +86,13 @@ function useStoreData() {
     setIsLoading(true);
     try {
       // ดึง Products (ใช้ฟังก์ชันของเพื่อนที่เตรียมไว้ให้)
-      // ส่ง { is_active: "all" } เพื่อบอกว่าขอข้อมูลสินค้าทั้งหมด (รวมที่ซ่อนด้วย)
       const productsData = await getProducts({ is_active: "all" });
       setProducts(productsData);
 
-      // ดึง Inventory (ถ้า API เส้นนี้ยังไม่มี ปล่อย Mock ไว้ก่อนได้ครับ)
-      // const resInventory = await api.get("/inventory");
-      // setInventory(resInventory.data);
+      // [UPDATE] ดึง Inventory จาก API แทนการ Mock ข้อมูลแล้ว
+      const resInventory = await api.get("/inventory-items");
+      setInventory(resInventory.data);
 
-      setInventory([
-        {
-          _id: "60f1a3000000000000000001", // <--- เปลี่ยนตรงนี้
-          name: "Ecuadorian Red Rose",
-          category: "flower",
-          cost_price: 18,
-          stock_quantity: 640,
-          attributes: { color: "red", origin: "imported" },
-        },
-        {
-          _id: "60f1a3000000000000000002", // <--- เปลี่ยนตรงนี้
-          name: "Kraft Wrapping Paper",
-          category: "wrapping_paper",
-          cost_price: 12,
-          stock_quantity: 300,
-          attributes: { color: "brown", origin: "local" },
-        },
-        {
-          _id: "60f1a3000000000000000003", // <--- เปลี่ยนตรงนี้
-          name: "Out of Stock Item",
-          category: "vase",
-          cost_price: 10,
-          stock_quantity: 0,
-          attributes: { color: "clear", origin: "local" },
-        },
-      ]);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -130,53 +104,39 @@ function useStoreData() {
     fetchData();
   }, []);
 
-  // [SAVE/UPDATE] บันทึกหรือแก้ไขข้อมูล Product ไปยัง MongoDB
   const saveProduct = async (data, isEditing) => {
     try {
       const payload = { ...data };
-
       if (isEditing) {
-        // กรณีแก้ไข (PUT)
         await api.put(`/products/${data._id}`, payload);
       } else {
-        // กรณีสร้างใหม่ (POST) ให้ลบ _id ทิ้งก่อนส่งไป Backend
         delete payload._id;
         await api.post("/products", payload);
       }
-
-      fetchData(); // รีโหลดตารางข้อมูลใหม่
+      fetchData();
     } catch (error) {
       console.error("Error saving product:", error);
-      alert(
-        error.response?.data?.message ||
-          "Data saving failed. Please try again.",
-      );
+      alert(error.response?.data?.message || "Data saving failed. Please try again.");
     }
   };
 
   // [SAVE/UPDATE] บันทึกหรือแก้ไขข้อมูล Inventory ไปยัง MongoDB
   const saveInventory = async (data, isEditing) => {
     try {
-      const url = isEditing
-        ? `${API_BASE_URL}/inventory/${data._id}`
-        : `${API_BASE_URL}/inventory`;
-      const method = isEditing ? "PUT" : "POST";
+      const payload = { ...data };
 
-      console.log(`[MongoDB] ${method} Inventory Data:`, data);
-
-      // --- ตัวอย่างการยิง API บันทึกข้อมูล ---
-      /*
-      const response = await fetch(url, {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Failed to save inventory");
-      */
+      // [UPDATE] จัดการเงื่อนไขแก้ไข/สร้างใหม่ ด้วย API ของจริง
+      if (isEditing) {
+        await api.put(`/inventory-items/${data._id}`, payload);
+      } else {
+        delete payload._id;
+        await api.post("/inventory-items", payload);
+      }
 
       fetchData(); // Reload ข้อมูลหลังบันทึกสำเร็จ
     } catch (error) {
       console.error("Error saving inventory:", error);
+      alert(error.response?.data?.message || "Inventory saving failed.");
     }
   };
 
@@ -186,7 +146,8 @@ function useStoreData() {
       if (type === "products") {
         await api.delete(`/products/${id}`);
       } else {
-        // ของ Inventory ปล่อย mock ไว้ก่อน
+        // [UPDATE] ยิง API ลบ Inventory
+        await api.delete(`/inventory-items/${id}`);
       }
 
       fetchData(); // รีโหลดตารางข้อมูลใหม่หลังลบสำเร็จ
@@ -860,12 +821,16 @@ export default function ProductEdit() {
               )}
             </div>
           </div>
-          <Button
-            onClick={() => handleOpenModal()}
-            className="bg-D-text hover:bg-[#38436c] text-white rounded-xl px-5 py-2.5 shadow-none"
-          >
-            <Plus className="w-4 h-4 mr-1.5" /> Add item
-          </Button>
+          {/* Sync AI: กดหลังเพิ่ม/แก้/ลบ ให้ AI chatbot รู้จักข้อมูลล่าสุด — base */}
+          <div className="flex flex-col-reverse items-start gap-3 sm:flex-row sm:items-start">
+            <SyncAiButton />
+            <Button
+              onClick={() => handleOpenModal()}
+              className="bg-D-text hover:bg-[#38436c] text-white rounded-xl px-5 py-2.5 shadow-none"
+            >
+              <Plus className="w-4 h-4 mr-1.5" /> Add item
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -885,14 +850,14 @@ export default function ProductEdit() {
               { value: "all", label: "All Categories" },
               ...(isProductTab
                 ? [
-                    { value: "bouquet_set", label: "Bouquet Set" },
-                    { value: "single_item", label: "Single Item" },
-                  ]
+                  { value: "bouquet_set", label: "Bouquet Set" },
+                  { value: "single_item", label: "Single Item" },
+                ]
                 : [
-                    { value: "flower", label: "Flower" },
-                    { value: "wrapping_paper", label: "Wrapping Paper" },
-                    { value: "vase", label: "Vase" },
-                  ]),
+                  { value: "flower", label: "Flower" },
+                  { value: "wrapping_paper", label: "Wrapping Paper" },
+                  { value: "vase", label: "Vase" },
+                ]),
             ]}
           />
           <SelectInput
@@ -1112,11 +1077,10 @@ export default function ProductEdit() {
                     <button
                       key={i}
                       onClick={() => setCurrentPage(i + 1)}
-                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                        currentPage === i + 1
+                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
                           ? "bg-D-text text-white"
                           : "text-neutral-500 hover:bg-neutral-200/50"
-                      }`}
+                        }`}
                     >
                       {i + 1}
                     </button>
