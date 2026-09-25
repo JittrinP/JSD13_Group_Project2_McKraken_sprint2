@@ -115,7 +115,7 @@ export default function Careguide() {
                     {/* Right Section: Image Container */}
                     <div className="bg-accent min-h-75 md:min-h-full flex items-center justify-center relative">
                         <img
-                            src="src/assets/Flower_care.png"
+                            src="https://images.pexels.com/photos/5409737/pexels-photo-5409737.jpeg?auto=compress&cs=tinysrgb&w=1260"
                             alt="Flower Care"
                             className="w-full h-full object-cover"
                         />
