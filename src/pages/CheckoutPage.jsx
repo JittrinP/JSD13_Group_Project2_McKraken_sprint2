@@ -94,7 +94,7 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (data.success) {
-        placeOrder(); // ค่อย place order จริงตอนนี้ (เคลียร์ตะกร้าใน Context)
+        placeOrder({ deliveryAddress, serviceFee, deliveryFee }); // ค่อย place order จริงตอนนี้ (เคลียร์ตะกร้าใน Context)
         setShowQR(false); // ปิด modal QR[cite: 30]
         setShowConfirmed(true); // เปิดหน้า Order Confirmed ต่อ[cite: 30]
       } else {
