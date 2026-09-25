@@ -4,6 +4,7 @@ import Footer from "./Footer";
 import Checkout from "../pages/CheckoutPage";
 import { CartProvider } from "../context/CartContext"; // เพิ่มไว้ล่วงหน้าให้ ProductsPage/CheckoutPage ใช้ตะกร้าร่วมกัน — Albert
 import { AuthProvider } from "../context/AuthContext"; // ให้ Navbar/LoginPage และหน้าอื่นๆ เข้าถึงสถานะ login ร่วมกัน — Albert
+import ChatWidget from "./ChatWidget"; // ปุ่ม Ask AI มุมขวาล่าง (ต้องอยู่ใน AuthProvider เพราะใช้ useAuth) — base
 
 export default function Layout() {
   return (
@@ -19,6 +20,7 @@ export default function Layout() {
 
           <Footer />
         </div>
+        <ChatWidget />
       </CartProvider>
     </AuthProvider>
   );
