@@ -202,6 +202,38 @@ const TOP_FLOWER_COLORS = [
 export default function Overview() {
   const [timeRange, setTimeRange] = React.useState("90d");
 
+  // การ์ด 4 ใบบนสุด: ตัวเลขสรุป เริ่มเป็น 0 รอโหลดจาก backend
+  const [summary, setSummary] = React.useState({
+    totalSales: 0,
+    totalCustomers: 0,
+    flowerStock: 0,
+    totalOrders: 0,
+  });
+  const [isSummaryLoading, setIsSummaryLoading] = React.useState(true); // true ระหว่างรอ backend ตอบ
+  const [summaryError, setSummaryError] = React.useState(""); // ข้อความ error ถ้าโหลดไม่สำเร็จ
+
+  // โหลดตัวเลขของการ์ด 4 ใบ ครั้งเดียวตอนเปิดหน้า
+  React.useEffect(() => {
+    async function fetchSummary() {
+      setIsSummaryLoading(true);
+      setSummaryError(""); // ล้าง error เก่าก่อนโหลดใหม่
+      try {
+        const res = await api.get("/dashboard/summary"); // ได้ { success, data: { totalSales, totalCustomers, flowerStock, totalOrders } }
+        setSummary(res.data.data); // หน้าตาข้อมูลตรงกับ state อยู่แล้ว เก็บได้เลย
+      } catch (err) {
+        console.error(err);
+        setSummaryError("Failed to load summary. Please try again."); // เอาไปแสดงใต้การ์ด
+      } finally {
+        setIsSummaryLoading(false); // สำเร็จหรือพังก็เลิกโหลด
+      }
+    }
+
+    fetchSummary();
+  }, []); // [] = ทำครั้งเดียวตอนเปิดหน้า
+
+  // ยังไม่มีตัวเลขจริงให้แสดง (กำลังโหลด หรือโหลดไม่สำเร็จ) → การ์ดแสดง "-" แทน 0 จะได้ไม่เข้าใจผิดว่ายอดเป็น 0
+  const showSummaryDash = isSummaryLoading || summaryError !== "";
+
   // Recent Order: ขอ order ใหม่สุด 10 รายการ (หน้า 1, ไม่กรอง) ส่ง limit เองเพื่อไม่ให้ผูกกับ PAGE_SIZE ของหน้า Orders
   const { orders: recentOrderList, isLoading, error } = useAdminOrders({
     page: 1,
@@ -312,7 +344,12 @@ export default function Overview() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-2xl font-semibold">฿2000.10</p>
+                {/* toLocaleString ใส่คอมมาให้ เช่น 25410 → 25,410 / maximumFractionDigits: 0 = ไม่แสดงทศนิยม */}
+                <p className="text-center text-2xl font-semibold">
+                  {showSummaryDash
+                    ? "-"
+                    : "฿" + summary.totalSales.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                </p>
               </CardContent>
             </Card>
 
@@ -324,19 +361,23 @@ export default function Overview() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-2xl font-semibold">20.1 k</p>
+                <p className="text-center text-2xl font-semibold">
+                  {showSummaryDash ? "-" : summary.totalCustomers.toLocaleString("en-US")}
+                </p>
               </CardContent>
             </Card>
 
-            {/* Total Products */}
+            {/* Flower Stock (เดิม Total Products): สต๊อกดอกไม้รวมจาก inventory item */}
             <Card className="bg-background">
               <CardHeader>
                 <CardTitle className="text-center font-heading text-lg">
-                  Total Products
+                  Flower Stock
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-2xl font-semibold">2.4 k</p>
+                <p className="text-center text-2xl font-semibold">
+                  {showSummaryDash ? "-" : summary.flowerStock.toLocaleString("en-US")}
+                </p>
               </CardContent>
             </Card>
 
@@ -348,10 +389,19 @@ export default function Overview() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-2xl font-semibold">1.6 k</p>
+                <p className="text-center text-2xl font-semibold">
+                  {showSummaryDash ? "-" : summary.totalOrders.toLocaleString("en-US")}
+                </p>
+                {/* บอกให้ชัดว่านับ order ที่ถูกยกเลิกด้วย (ต่างจาก Total Sales ที่ไม่นับ) */}
+                <p className="text-center text-xs text-[#8A91A0]">incl. cancelled orders</p>
               </CardContent>
             </Card>
           </div>
+
+          {/* โหลดตัวเลขการ์ดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
+          {summaryError && (
+            <p className="mt-2 text-center text-sm text-[#9A4D4D]">{summaryError}</p>
+          )}
 
           {/* Second row data */}
           <div className="flex flex-col md:flex-row gap-2">
