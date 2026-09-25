@@ -38,7 +38,9 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
-import { SquarePen, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+
+import { useAdminOrders } from "../../../hooks/useAdminOrders"; // hook เดียวกับหน้า Orders ใช้ดึง Recent Order
 
 //  data สำหรับ graph Sale Statistic
 const SaleStatisticChartData = [
@@ -177,22 +179,6 @@ const ShipmentStatusChartConfig = {
   },
 };
 
-// Recent Order table data
-const recentOrders = [
-  {
-    orderId: "#122",
-    customerId: "#122",
-    products: ["Rose x10", "Lily x10", "Mali x10"],
-    status: "Delivery",
-  },
-  {
-    orderId: "#123",
-    customerId: "#124",
-    products: ["Rose x10", "Lily x10", "Mali x10"],
-    status: "Delivery",
-  },
-];
-
 // Shipment Status
 const ShipmentPieChartData = [
   { status: "delivered", orders: 275, fill: "var(--color-delivered)" },
@@ -236,16 +222,18 @@ const SalePieChartData = [
   { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
   { browser: "other", visitors: 90, fill: "var(--color-other)" },
 ];
-function editHandler(){
-  return(<></>)
-}
-function deleteHandler(){
-  return(<></>)
-}
 
 
 export default function Overview() {
   const [timeRange, setTimeRange] = React.useState("90d");
+
+  // Recent Order: ขอ order ใหม่สุด 10 รายการ (หน้า 1, ไม่กรอง) ส่ง limit เองเพื่อไม่ให้ผูกกับ PAGE_SIZE ของหน้า Orders
+  const { orders: recentOrderList, isLoading, error } = useAdminOrders({
+    page: 1,
+    status: "all",
+    search: "",
+    limit: 10,
+  });
 
   const filteredData = SaleStatisticChartData.filter((item) => {
     const date = new Date(item.date);
@@ -475,58 +463,87 @@ export default function Overview() {
           {/* third row graph */}
           <div className="flex flex-col md:flex-row gap-2">
             {/* Recent Order */}
-            <div className="mt-4 md:w-[70%] h-fit">
+            <div className="mt-4 md:w-[70%] flex flex-col">
+              {/* แก้ status / ลบ order ทำที่หน้า Orders ที่เดียว หน้านี้แสดงอย่างเดียว (ลิงก์ View all อยู่แถวท้ายตาราง) */}
               <h2 className="text-2xl font-semibold pb-2">Recent Order</h2>
 
-              <Card className="bg-background">
+              {/* จอใหญ่: กล่องสูงเท่ากล่อง Sale Overview (absolute ไม่ดันความสูงแถว) แล้ว scroll ในกล่อง / จอเล็ก: สูงสุด 400px */}
+              {/* py-0 ให้หัวตารางชิดขอบบน, ปิด overflow ของ div ที่ห่อ Table เพื่อให้ sticky อิงกับการ scroll ของ Card */}
+              <div className="relative md:flex-1">
+              <Card className="bg-background py-0 max-h-[400px] overflow-y-auto md:max-h-none md:absolute md:inset-0 [&_[data-slot=table-container]]:overflow-visible">
                 <CardContent className="p-0">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-10 bg-background">
                       <TableRow>
                         <TableHead>OrderID</TableHead>
                         <TableHead>Customer ID</TableHead>
                         <TableHead>Products item</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-center">Edit</TableHead>
-                        <TableHead className="text-center">Delete</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recentOrders.map((order, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{order.orderId}</TableCell>
-                          <TableCell>{order.customerId}</TableCell>
+                      {/* กำลังโหลดครั้งแรก (ตอน refetch หลังแก้/ลบยังมีข้อมูลเดิมอยู่ จึงไม่ต้องแสดง) */}
+                      {isLoading && recentOrderList.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-10 text-center text-[#8A91A0]">
+                            Loading orders...
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      {/* โหลดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
+                      {!isLoading && error && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-10 text-center text-[#9A4D4D]">
+                            {error}
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      {/* โหลดเสร็จแล้วแต่ยังไม่มี order ในระบบ */}
+                      {!isLoading && !error && recentOrderList.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-10 text-center text-[#8A91A0]">
+                            No orders
+                          </TableCell>
+                        </TableRow>
+                      )}
+
+                      {recentOrderList.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell>{order.order_id}</TableCell>
+                          <TableCell>{order.customer_id}</TableCell>
                           <TableCell>
                             <ul className="list-disc pl-4">
-                              {order.products.map((product) => (
-                                <li key={product}>{product}</li>
+                              {order.items.map((item) => (
+                                <li key={item.product_id}>
+                                  {item.name} x{item.quantity}
+                                </li>
                               ))}
                             </ul>
                           </TableCell>
                           <TableCell>{order.status}</TableCell>
-                          <TableCell className="text-center">
-                            <button
-                              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white border border-neutral/20 text-neutral hover:bg-secondary transition-colors hover:cursor-pointer"
-                              aria-label="Edit order"
-                            >
-                              <SquarePen className="w-4 h-4" />
-                            </button>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <button
-                              className="w-9 h-9 rounded-xl flex items-center justify-center bg-destructive text-white hover:opacity-90 transition-opacity hover:cursor-pointer"
-                              aria-label="Delete order"
-                              
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </TableCell>
                         </TableRow>
                       ))}
+
+                      {/* แถวสุดท้าย: เห็นเมื่อ scroll ถึงล่างสุด พาไปหน้า Orders (แสดงเฉพาะตอนมี order) */}
+                      {recentOrderList.length > 0 && (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={4} className="py-4 text-center">
+                            <Link
+                              to="/admindashboard/order-list"
+                              className="text-sm font-semibold text-[#475486] hover:underline"
+                            >
+                              View all orders
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
               </Card>
+              </div>
             </div>
             {/* Sale Overview */}
             <div className="mt-4 md:w-[30%] h-full">
