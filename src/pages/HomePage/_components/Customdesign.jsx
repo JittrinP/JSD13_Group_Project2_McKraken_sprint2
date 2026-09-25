@@ -4,6 +4,10 @@ import '@google/model-viewer';
 const flowerModel = "https://rri4tg6y27zcjsqa.public.blob.vercel-storage.com/flower.glb";
 import { createDesign, updateDesign, getDesign } from '../../../lib/customDesignApi';
 import { useCart } from '../../../context/CartContext';
+import { useAuth } from '../../../context/AuthContext';
+// AI Preview: สร้างรูปช่อด้วย AI (logic แยกไว้ใน useDesignPreview.js, หน้าตาใน PreviewPanel.jsx)
+import { useDesignPreview } from './useDesignPreview';
+import { PreviewImage, PreviewLoading, PreviewHistory } from './PreviewPanel';
 
 const CustomDesign = () => {
   // =========================================================================
@@ -179,6 +183,15 @@ const CustomDesign = () => {
     return components;
   };
 
+  // AI Preview (ต้องเรียกก่อน if (isLoading) return ด้านล่าง ตามกฎของ hook)
+  const { user } = useAuth();
+  const preview = useDesignPreview({
+    components: selectionsToComponents(selections),
+    selections,
+    user,
+    onRestoreSelections: setSelections,
+  });
+
   const handleConfirmSave = async (e) => {
     e.preventDefault();
     setSaveError('');
@@ -239,7 +252,20 @@ const CustomDesign = () => {
         
         {/* === คอลัมน์ซ้าย: Preview Image (ขยายเต็มกรอบ / เอา Hover ออก) === */}
         <div className="relative bg-secondary rounded-3xl p-0 flex flex-col justify-center items-center min-h-100 lg:min-h-130 shadow-sm border border-black/5 overflow-hidden">
-          
+          {preview.isGenerating && <PreviewLoading />}
+
+          {/* มีรูป AI → โชว์รูปแทน 3D (กด "View 3D" กลับมาได้) */}
+          {preview.shown ? (
+            <PreviewImage
+              entry={preview.shown}
+              isStale={preview.isStale}
+              isFromHistory={preview.isFromHistory}
+              isGenerating={preview.isGenerating}
+              onRegenerate={() => preview.generate({ force: true })}
+              onShow3D={preview.hidePreview}
+            />
+          ) : (
+          <>
           <div className="w-full h-full flex justify-center items-center overflow-hidden rounded-3xl">
             <model-viewer
               src={flowerModel}
@@ -268,7 +294,14 @@ const CustomDesign = () => {
               </svg>
               <span>Drag to Rotate</span>
             </div>
+          </>
+          )}
 
+          <PreviewHistory
+            history={preview.history}
+            shownId={preview.shown?.id}
+            onPick={preview.showFromHistory}
+          />
         </div>
 
         {/* === คอลัมน์ขวา: ส่วนเลือกข้อมูล (Dropdown) และปุ่ม === */}
@@ -403,7 +436,27 @@ const CustomDesign = () => {
             >
               Save
             </button>
+            {/* AI Preview: สร้างรูปช่อตามที่เลือก · โควตา 3 รูป/วัน/คน */}
+            <button
+              onClick={() => preview.generate()}
+              disabled={!user || preview.isGenerating}
+              title={user ? 'Generate a photo of this bouquet with AI' : 'Log in to preview'}
+              className="px-8 py-3 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary hover:text-[#FBF9F8] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {preview.isGenerating ? 'Previewing...' : 'Preview'}
+              {preview.quota && (
+                <span className="ml-2 text-xs font-normal opacity-70">
+                  {preview.quota.remaining}/{preview.quota.limit}
+                </span>
+              )}
+            </button>
           </div>
+          {!user && (
+            <p className="mt-3 text-xs text-neutral/70">Log in to preview your bouquet as an AI photo.</p>
+          )}
+          {preview.error && (
+            <p className="mt-3 text-sm text-red-600">{preview.error}</p>
+          )}
         </div>
       </div>
 

@@ -19,3 +19,21 @@ export async function syncAiKnowledge() {
   const res = await api.post("/ai/sync");
   return res.data.data;
 }
+
+// ---------------------------------------------------------------------------
+// AI Preview: สร้างรูปช่อ custom (ดู AI_PREVIEW_PLAN.md ใน backend ข้อ 4.4)
+// ---------------------------------------------------------------------------
+
+// GET /api/v1/ai/preview/quota → { limit: 3, remaining, promptVersion }
+export async function getPreviewQuota() {
+  const res = await api.get("/ai/preview/quota");
+  return res.data.data;
+}
+
+// components: [{ inventory_item_id, quantity }] (รูปแบบเดียวกับ /custom-design)
+// คืน { image: "data:image/jpeg;base64,...", caption: { size, base, flowers }, promptVersion, limit, remaining }
+// ใช้เวลา 10–60 วิ · error: 400 ตัวเลือกไม่ครบ / 409 กำลังสร้างอยู่ / 429 ครบ 3 รูปวันนี้ / 503 ระบบเต็มวันนี้
+export async function previewDesign(components) {
+  const res = await api.post("/ai/preview", { components }, { timeout: 120000 });
+  return res.data.data;
+}
