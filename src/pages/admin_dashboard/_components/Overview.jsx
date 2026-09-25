@@ -43,42 +43,64 @@ import { Link } from "react-router-dom";
 import { useAdminOrders } from "../../../hooks/useAdminOrders"; // hook เดียวกับหน้า Orders ใช้ดึง Recent Order
 import { api } from "../../../context/AuthContext"; // axios ที่แนบ cookie (token) ไปกับทุก request ให้อัตโนมัติ
 
+// สีป้าย status ในตาราง Recent Order (ชุดเดียวกับ statusStyles ใน OrderList.jsx ถ้าแก้สี ให้แก้ทั้ง 2 ไฟล์)
+const STATUS_BADGE_STYLES = {
+  pending: "bg-[#FFF4D6] text-[#916D18]",
+  processing: "bg-[#E9EAFE] text-[#545C9E]",
+  shipped: "bg-[#E5F1F0] text-[#3D7770]",
+  completed: "bg-[#E5F4E9] text-[#3B7B4D]",
+  cancelled: "bg-[#F8E6E6] text-[#9A4D4D]",
+};
+
+// ชื่อที่แสดงของแต่ละช่วงเวลาใน dropdown ของ Sale Statistic
+const TIME_RANGE_LABELS = {
+  "90d": "Last 3 months",
+  "30d": "Last 30 days",
+  "7d": "Last 7 days",
+};
+
+// หน้าตาของตัวเลือกใน dropdown ให้เข้ากับธีม admin (สีกรมท่า #475486, ชี้แล้วพื้นฟ้าอ่อน #E8F4F4 เหมือนเมนูด้านข้าง)
+const TIME_RANGE_ITEM_CLASS =
+  "rounded-lg text-[#475486] focus:bg-[#E8F4F4] focus:text-[#475486] data-highlighted:bg-[#E8F4F4] data-selected:font-semibold";
+
 // config ของ chart Sale Statistic
 // เส้นเดียว: ยอดขายรายวัน (key "sales" ต้องตรงกับชื่อ field ที่ backend ส่งมา)
+// สีกรมท่าม่วงของธีม admin (กราฟมีเส้นเดียว ใช้สีหลักได้เลย)
 const SaleStatisticChartConfig = {
   sales: {
     label: "Sales (฿)",
-    color: "var(--chart-1)",
+    color: "#475486",
   },
 };
 
 // config ของกราฟ Shipment Status: ชื่อ key ต้องตรงกับ order_status ใน order.model.js
+// สีตามความหมายของ status ตระกูลเดียวกับป้ายสีในตาราง Recent Order
+// (ผ่านการตรวจสีแล้ว: คนตาบอดสีแยกได้ทุกคู่ / สีป้ายตรงๆ ใช้ไม่ได้เพราะ shipped กับ completed ใกล้กันเกินไป)
 const ShipmentStatusChartConfig = {
   orders: {
     label: "Orders",
   },
   pending: {
     label: "Pending",
-    color: "var(--chart-1)",
+    color: "#C08412", // เหลืองทอง
   },
   processing: {
     label: "Processing",
-    color: "var(--chart-2)",
+    color: "#9A7BE0", // ม่วง
   },
   shipped: {
     label: "Shipped",
-    color: "var(--chart-3)",
+    color: "#1F68A8", // น้ำเงิน
   },
   completed: {
     label: "Completed",
-    color: "var(--chart-4)",
+    color: "#56B27A", // เขียว
   },
   cancelled: {
     label: "Cancelled",
-    color: "var(--chart-5)",
+    color: "#B03A48", // แดง
   },
 };
-
 
 // config ของกราฟ Top 5 Flowers: ชื่อดอกไม้มาจาก backend (เปลี่ยนได้) เลยไม่ผูกสีกับชื่อ แต่ผูกสีกับอันดับแทน
 const TopFlowersChartConfig = {
@@ -87,13 +109,14 @@ const TopFlowersChartConfig = {
   },
 };
 
-// สีของอันดับ 1-5 (อันดับ 1 ใช้สีแรก)
+// สีของอันดับ 1-5: กรมท่าม่วงโทนเดียว ไล่จากเข้ม (อันดับ 1) ไปอ่อน (อันดับ 5)
+// สีบอก "อันดับ" ส่วนชื่อดอกไม้ดูจาก legend (ถ้าใช้คนละสี คนดูจะคิดว่าสีบอกชนิดดอกไม้ แต่อันดับสลับได้ทุกวัน)
 const TOP_FLOWER_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
+  "#26305C",
+  "#3A4679",
+  "#515E96",
+  "#6C79B2",
+  "#8C97CA",
 ];
 
 
@@ -270,7 +293,7 @@ export default function Overview() {
             </Card>
 
             {/* Total Customer */}
-            <Card className="bg-background">
+            <Card className="bg-background shadow-md">
               <CardHeader>
                 <CardTitle className="text-center font-heading text-lg">
                   Total Customer
@@ -284,7 +307,7 @@ export default function Overview() {
             </Card>
 
             {/* Flower Stock (เดิม Total Products): สต๊อกดอกไม้รวมจาก inventory item */}
-            <Card className="bg-background">
+            <Card className="bg-background shadow-md">
               <CardHeader>
                 <CardTitle className="text-center font-heading text-lg">
                   Flower Stock
@@ -298,7 +321,7 @@ export default function Overview() {
             </Card>
 
             {/* Total Orders */}
-            <Card className="bg-background">
+            <Card className="bg-background shadow-md">
               <CardHeader>
                 <CardTitle className="text-center font-heading text-lg">
                   Total Orders
@@ -322,9 +345,10 @@ export default function Overview() {
           {/* Second row data */}
           <div className="flex flex-col md:flex-row gap-2">
             {/* Sale statistic graph */}
-            <div className="mt-4 md:w-[70%] h-fit">
-              <h2 className="text-2xl font-semibold">Sale Statistic</h2>
-              <Card className="pt-0 mt-2 bg-background">
+            {/* flex flex-col + การ์ด flex-1 (ทั้งกล่องนี้และ Shipment Status) = การ์ดยืดให้สูงเท่ากับกล่องที่สูงกว่าในแถวเดียวกัน */}
+            <div className="mt-4 md:w-[70%] flex flex-col">
+              <h2 className="text-2xl font-semibold pb-2">Sale Statistic</h2>
+              <Card className="pt-0 bg-background flex-1">
                 <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
                   <div className="grid flex-1 gap-1">
                     <CardTitle>Daily Sales</CardTitle>
@@ -332,46 +356,53 @@ export default function Overview() {
                       Paid orders, excluding cancelled
                     </CardDescription>
                   </div>
-                  <Select value={timeRange} onValueChange={setTimeRange}>
+                  {/* items = บอก Select ว่าแต่ละค่าชื่ออะไร ช่องที่เลือกไว้จะแสดง "Last 7 days" แทน "7d" */}
+                  <Select value={timeRange} onValueChange={setTimeRange} items={TIME_RANGE_LABELS}>
                     <SelectTrigger
-                      className="flex w-[80px] md:w-[160px] rounded-lg sm:ml-auto"
-                      aria-label="Select a value"
+                      className="flex w-[140px] md:w-[160px] sm:ml-auto rounded-xl border-neutral-200/50 bg-white font-medium text-[#475486] shadow-none focus-visible:ring-[#475486]/30"
+                      aria-label="Select time range"
                     >
-                      <SelectValue placeholder="Last 3 months" />
+                      <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="90d" className="rounded-lg">
+                    {/* alignItemWithTrigger={false} = เปิดรายการใต้ช่อง ไม่ให้เด้งขึ้นมาทับช่องที่เลือกไว้ */}
+                    <SelectContent
+                      alignItemWithTrigger={false}
+                      className="rounded-xl border border-neutral-200/50 bg-white p-1 shadow-lg"
+                    >
+                      <SelectItem value="90d" className={TIME_RANGE_ITEM_CLASS}>
                         Last 3 months
                       </SelectItem>
-                      <SelectItem value="30d" className="rounded-lg">
+                      <SelectItem value="30d" className={TIME_RANGE_ITEM_CLASS}>
                         Last 30 days
                       </SelectItem>
-                      <SelectItem value="7d" className="rounded-lg">
+                      <SelectItem value="7d" className={TIME_RANGE_ITEM_CLASS}>
                         Last 7 days
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </CardHeader>
-                <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-                  {/* ข้อความทุกแบบสูง 250px เท่ากราฟ กล่องจะได้ไม่ยืด/หดตอนเปลี่ยน dropdown */}
+                <CardContent className="flex flex-1 flex-col px-2 pt-4 sm:px-6 sm:pt-6">
+                  {/* กราฟและข้อความทุกแบบ:
+                      - มือถือ: สูงตายตัว 250px (กราฟต้องรู้ความสูงแน่นอน ถ้าให้ยืดเองจะได้ความสูง 0 แล้วกราฟหาย)
+                      - จอ md ขึ้นไป: อย่างน้อย 250px และยืดเต็มกรอบ (flex-1) ให้เท่ากล่อง Shipment Status */}
 
                   {/* กำลังโหลด (ทุกครั้งที่เปลี่ยน dropdown) */}
                   {isSalesLoading && (
-                    <p className="flex h-[250px] items-center justify-center text-sm text-[#8A91A0]">
+                    <p className="flex h-[250px] md:h-auto md:min-h-[250px] md:flex-1 items-center justify-center text-sm text-[#8A91A0]">
                       Loading...
                     </p>
                   )}
 
                   {/* โหลดไม่สำเร็จ (เช่น backend ล่ม หรือ session หมดอายุ) */}
                   {!isSalesLoading && salesError && (
-                    <p className="flex h-[250px] items-center justify-center text-sm text-[#9A4D4D]">
+                    <p className="flex h-[250px] md:h-auto md:min-h-[250px] md:flex-1 items-center justify-center text-sm text-[#9A4D4D]">
                       {salesError}
                     </p>
                   )}
 
                   {/* โหลดสำเร็จแต่ช่วงนี้ไม่มียอดขายเลย (ทุกวันเป็น 0) */}
                   {!isSalesLoading && !salesError && totalSalesInRange === 0 && (
-                    <p className="flex h-[250px] items-center justify-center text-sm text-[#8A91A0]">
+                    <p className="flex h-[250px] md:h-auto md:min-h-[250px] md:flex-1 items-center justify-center text-sm text-[#8A91A0]">
                       No sales in this period
                     </p>
                   )}
@@ -380,7 +411,7 @@ export default function Overview() {
                   {!isSalesLoading && !salesError && totalSalesInRange > 0 && (
                   <ChartContainer
                     config={SaleStatisticChartConfig}
-                    className="aspect-auto h-[250px] w-full"
+                    className="aspect-auto h-[250px] w-full md:h-auto md:min-h-[250px] md:flex-1"
                   >
                     <AreaChart data={salesChartData}>
                       <defs>
@@ -452,9 +483,9 @@ export default function Overview() {
             </div>
 
             {/* shipment status chart */}
-            <div className="mt-4 md:w-[30%] h-full">
+            <div className="mt-4 md:w-[30%] flex flex-col">
               <h2 className="text-2xl font-semibold pb-2">Shipment Status</h2>
-              <Card className="flex flex-col bg-background">
+              <Card className="flex flex-col bg-background flex-1">
                 <CardHeader className="items-center pb-0">
                   <CardTitle>Orders by Status</CardTitle>
                   <CardDescription>Current shipment breakdown</CardDescription>
@@ -517,16 +548,19 @@ export default function Overview() {
 
               {/* จอใหญ่: กล่องสูงเท่ากล่อง Sale Overview (absolute ไม่ดันความสูงแถว) แล้ว scroll ในกล่อง / จอเล็ก: สูงสุด 400px */}
               {/* py-0 ให้หัวตารางชิดขอบบน, ปิด overflow ของ div ที่ห่อ Table เพื่อให้ sticky อิงกับการ scroll ของ Card */}
+              {/* overflow-auto = scroll ได้ทั้งแนวตั้งและแนวนอน (เดิม overflow-y-auto ทำให้เลื่อนขวาไม่ได้ ตารางถูกตัด) */}
               <div className="relative md:flex-1">
-              <Card className="bg-background py-0 max-h-[400px] overflow-y-auto md:max-h-none md:absolute md:inset-0 [&_[data-slot=table-container]]:overflow-visible">
+              <Card className="bg-white py-0 max-h-[400px] overflow-auto md:max-h-none md:absolute md:inset-0 [&_[data-slot=table-container]]:overflow-visible">
                 <CardContent className="p-0">
-                  <Table>
-                    <TableHeader className="sticky top-0 z-10 bg-background">
-                      <TableRow>
-                        <TableHead>OrderID</TableHead>
-                        <TableHead>Customer ID</TableHead>
-                        <TableHead>Products item</TableHead>
-                        <TableHead>Status</TableHead>
+                  {/* min-w = ตารางกว้างอย่างน้อย 640px ถ้าจอแคบกว่านี้ให้เลื่อนขวาดูแทนการบีบข้อความ (แบบเดียวกับหน้า Orders) */}
+                  <Table className="min-w-[640px] text-[#475486]">
+                    {/* หัวตาราง: สีเดียวกับหน้า Orders / ใส่สีพื้นที่ th ทุกช่อง เพื่อไม่ให้แถวที่เลื่อนผ่านโผล่ทะลุตอน sticky */}
+                    <TableHeader className="sticky top-0 z-10 [&_th]:bg-[#F4F7F8] [&_th]:shadow-[inset_0_-1px_0_#E1E3E7]">
+                      <TableRow className="border-0 hover:bg-transparent">
+                        <TableHead className="px-5 text-xs font-semibold uppercase tracking-wide text-[#667092]">Order ID</TableHead>
+                        <TableHead className="px-5 text-xs font-semibold uppercase tracking-wide text-[#667092]">Customer ID</TableHead>
+                        <TableHead className="px-5 text-xs font-semibold uppercase tracking-wide text-[#667092]">Products</TableHead>
+                        <TableHead className="px-5 text-xs font-semibold uppercase tracking-wide text-[#667092]">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -534,7 +568,7 @@ export default function Overview() {
                       {isLoading && recentOrderList.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={4} className="py-10 text-center text-[#8A91A0]">
-                            Loading orders...
+                            Loading...
                           </TableCell>
                         </TableRow>
                       )}
@@ -557,26 +591,37 @@ export default function Overview() {
                         </TableRow>
                       )}
 
+                      {/* แถว order: เส้นคั่นบาง + พื้นจางตอนชี้เมาส์ แบบเดียวกับหน้า Orders */}
                       {recentOrderList.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell>{order.order_id}</TableCell>
-                          <TableCell>{order.customer_id}</TableCell>
-                          <TableCell>
-                            <ul className="list-disc pl-4">
+                        <TableRow key={order.id} className="border-b border-[#ECEDEF] hover:bg-[#FCFDFD]">
+                          <TableCell className="px-5 py-4 font-semibold">{order.order_id}</TableCell>
+                          <TableCell className="px-5 py-4 text-[#667092]">{order.customer_id}</TableCell>
+                          <TableCell className="px-5 py-4">
+                            <ul className="list-disc space-y-0.5 pl-4">
                               {order.items.map((item) => (
                                 <li key={item.product_id}>
-                                  {item.name} x{item.quantity}
+                                  {item.name} <span className="text-[#667092]">x{item.quantity}</span>
                                 </li>
                               ))}
                             </ul>
                           </TableCell>
-                          <TableCell>{order.status}</TableCell>
+                          <TableCell className="px-5 py-4">
+                            {/* ป้ายสีตาม status ชื่อที่แสดง (เช่น "Pending") ใช้จาก config ของกราฟ Shipment Status */}
+                            <span
+                              className={
+                                "inline-flex rounded-full px-3 py-1 text-xs font-semibold " +
+                                STATUS_BADGE_STYLES[order.status]
+                              }
+                            >
+                              {ShipmentStatusChartConfig[order.status].label}
+                            </span>
+                          </TableCell>
                         </TableRow>
                       ))}
 
                       {/* แถวสุดท้าย: เห็นเมื่อ scroll ถึงล่างสุด พาไปหน้า Orders (แสดงเฉพาะตอนมี order) */}
                       {recentOrderList.length > 0 && (
-                        <TableRow className="hover:bg-transparent">
+                        <TableRow className="border-0 hover:bg-transparent">
                           <TableCell colSpan={4} className="py-4 text-center">
                             <Link
                               to="/admindashboard/order-list"
