@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import '@google/model-viewer';
 const flowerModel = "https://rri4tg6y27zcjsqa.public.blob.vercel-storage.com/flower.glb";
 import { createDesign, updateDesign, getDesign } from '../../../lib/customDesignApi';
@@ -216,6 +216,34 @@ const CustomDesign = () => {
     savedImage: savedPreviewImage,
   });
 
+  // มาจาก Ask AI (กด Generate preview แล้วยืนยัน) → navigate("/", { state: { aiDesign, autoPreview } })
+  // ใช้ location.key เป็นตัวบอก "มีการ navigate ใหม่" เพราะ key เปลี่ยนทุกครั้ง แม้อยู่หน้า Home อยู่แล้ว (/ → /)
+  // (แบบเดิมเทียบค่าตอน render แล้วพลาดกรณีเปิดแชทจากหน้า Home: ส่วนนี้ไม่ถูกสร้างใหม่ ต้อง refresh ถึงทำงาน)
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const aiDesign = location.state?.aiDesign;
+    if (!aiDesign) return;
+
+    const [f1, f2, f3] = aiDesign.flowers;
+    const aiSelections = {
+      baseId: aiDesign.base._id,
+      flower1Id: f1?._id || '', flower1Qty: f1?.quantity || 1,
+      flower2Id: f2?._id || '', flower2Qty: f2?.quantity || 1,
+      flower3Id: f3?._id || '', flower3Qty: f3?.quantity || 1,
+    };
+    // ข้อมูลมาจาก router (ภายนอก component) → เติม dropdown ใน effect
+    setSelections(aiSelections);
+    document.getElementById('customDesign')?.scrollIntoView({ behavior: 'smooth' });
+    // ส่งช่อไปตรงๆ เพราะ state ของ dropdown ยังไม่อัปเดตในรอบนี้
+    if (location.state.autoPreview) {
+      preview.generate({ components: selectionsToComponents(aiSelections), selections: aiSelections });
+    }
+    // ล้าง state ใน URL history → refresh แล้วไม่สร้างรูปซ้ำ
+    navigate('.', { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
   const handleConfirmSave = async (e) => {
     e.preventDefault();
     setSaveError('');
@@ -278,11 +306,12 @@ const CustomDesign = () => {
   );
 
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-125 font-body text-primary">Loading designer...</div>;
+    return <div id="customDesign" className="flex justify-center items-center min-h-125 font-body text-primary">Loading designer...</div>;
   }
 
   return (
-    <div className="w-full bg-tertiary font-body text-neutral p-4 lg:p-12">
+    // id ให้ลิงก์ /#customDesign (Edit จาก CustomList) และ Ask AI เลื่อนมาที่ส่วนนี้ได้
+    <div id="customDesign" className="w-full bg-tertiary font-body text-neutral p-4 lg:p-12">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
         
         {/* === คอลัมน์ซ้าย: Preview Image (ขยายเต็มกรอบ / เอา Hover ออก) === */}

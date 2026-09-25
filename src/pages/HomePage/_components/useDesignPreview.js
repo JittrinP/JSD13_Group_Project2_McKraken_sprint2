@@ -70,17 +70,23 @@ export function useDesignPreview({ components, selections, user, onRestoreSelect
   const imageToSaveIsStale = Boolean(imageToSave) && imageToSave.previewKey !== currentKey;
 
   // force = true → สร้างรูปใหม่แม้เคยสร้างช่อนี้แล้ว (ปุ่ม "Generate a new one")
-  async function generate({ force = false } = {}) {
+  // components / selections: ส่งมาตรงๆ ได้ (มาจาก Ask AI: state ของ dropdown ยังอัปเดตไม่ทันในรอบ render นี้)
+  async function generate({
+    force = false,
+    components: targetComponents = components,
+    selections: targetSelections = selections,
+  } = {}) {
     if (!userId) {
       setError("Please log in to preview your bouquet.");
       return;
     }
     setError("");
+    const targetKey = previewKeyOf(targetComponents);
 
     // ช่อเดิม + template รุ่นเดิม → ใช้รูปใน history ไม่ต้องรอ ไม่เสียโควตา (seed เดิมก็ไม่ได้รูปเดิมเป๊ะ)
     if (!force) {
       const cached = history.find(
-        (h) => h.previewKey === currentKey && h.promptVersion === quota?.promptVersion,
+        (h) => h.previewKey === targetKey && h.promptVersion === quota?.promptVersion,
       );
       if (cached) {
         setShown(cached);
@@ -92,11 +98,11 @@ export function useDesignPreview({ components, selections, user, onRestoreSelect
 
     setIsGenerating(true);
     try {
-      const data = await previewDesign(mergeComponents(components));
+      const data = await previewDesign(mergeComponents(targetComponents));
       const newHistory = await addToHistory(userId, {
-        previewKey: currentKey,
+        previewKey: targetKey,
         promptVersion: data.promptVersion,
-        selections,
+        selections: targetSelections,
         caption: data.caption,
         image: data.image,
       });
