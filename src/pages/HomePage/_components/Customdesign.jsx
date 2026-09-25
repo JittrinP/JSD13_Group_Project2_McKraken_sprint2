@@ -238,7 +238,7 @@ const CustomDesign = () => {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
         
         {/* === คอลัมน์ซ้าย: Preview Image (ขยายเต็มกรอบ / เอา Hover ออก) === */}
-        <div className="relative bg-secondary rounded-3xl p-0 flex justify-center items-center min-h-100 lg:min-h-130 shadow-sm border border-black/5 overflow-hidden">
+        <div className="relative bg-secondary rounded-3xl p-0 flex flex-col justify-center items-center min-h-100 lg:min-h-130 shadow-sm border border-black/5 overflow-hidden">
           
           <div className="w-full h-full flex justify-center items-center overflow-hidden rounded-3xl">
             <model-viewer
@@ -246,10 +246,28 @@ const CustomDesign = () => {
               alt="3D custom flower arrangement preview"
               camera-controls
               auto-rotate
+              interaction-prompt="none"
               shadow-intensity="1"
               className="w-full h-full rounded-3xl shadow-inner"
             ></model-viewer>
           </div>
+
+          <div className="flex items-center justify-center gap-2 m-3 text-neutral text-xs sm:text-sm">
+              <svg
+                className="w-4 h-4 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <span>Drag to Rotate</span>
+            </div>
 
         </div>
 
