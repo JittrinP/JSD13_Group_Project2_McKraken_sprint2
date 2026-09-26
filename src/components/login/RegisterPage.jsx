@@ -69,7 +69,7 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
     <div
       role="presentation"
       onMouseDown={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-white/40 backdrop-blur-md px-4 py-6 animate-in fade-in"
     >
       <div
         role="dialog"
@@ -77,7 +77,7 @@ export default function RegisterPage({ isOpen, onClose, onSwitchToLogin }) {
         aria-label="Create account"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[460px] rounded-xl border border-[#e4e2e2] bg-background p-5 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.04)] md:p-8"
+        className="relative w-full max-w-[460px] rounded-xl border border-[#e4e2e2] bg-background p-5 shadow-[0px_4px_10px_0px_rgba(0,0,0,0.04)] md:p-8 animate-in fade-in zoom-in-95"
       >
         <button
           type="button"
