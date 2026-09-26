@@ -102,7 +102,7 @@ export default function LoginPage({
               <button
                 type="button"
                 onClick={onForgotPassword}
-                className="border-b border-black font-body text-base text-primary"
+                className="font-body text-base font-semibold text-[#3D6B4F] hover:text-[#2F5540] hover:underline underline-offset-4"
               >
                 Forget password?
               </button>
@@ -138,7 +138,7 @@ export default function LoginPage({
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="font-body text-base text-primary underline"
+              className="font-body text-base font-semibold text-[#3D6B4F] hover:text-[#2F5540] hover:underline underline-offset-4"
             >
               Register
             </button>
