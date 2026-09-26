@@ -109,7 +109,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0 && !showConfirmed) {
     return (
-      <main className="p-8 text-neutral/90">
+      <main className="max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 text-neutral/90">
         <h1 className="text-3xl font-bold font-display mb-4">Summary</h1>
         <div className="bg-white rounded-2xl p-8 shadow-lg shadow-black/4 text-center">
           <p className="mb-4">ยังไม่มีสินค้าในตะกร้า</p>
@@ -122,7 +122,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="p-4 sm:p-8 text-neutral/90">
+    <main className="max-w-7xl w-full mx-auto px-4 sm:px-8 py-4 sm:py-8 text-neutral/90">
       <h1 className="text-3xl font-bold font-display mb-4">Summary</h1>
 
       {/* Table header — เฉพาะ desktop เพราะมือถือใช้การ์ดแบบ stacked แทน */}
