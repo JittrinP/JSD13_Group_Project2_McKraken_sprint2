@@ -1,7 +1,7 @@
 # Atelier de Flora — Frontend 🌸
 
 ร้านดอกไม้ออนไลน์ของทีม **McKraken** (JSD#13 Group Project, กลุ่ม GP02)
-ซื้อช่อดอกไม้สำเร็จรูป, **ออกแบบช่อเอง (custom design)** พร้อม preview 3D และมี **AI chatbot "Ask AI"** ช่วยแนะนำ / จัดช่อตามงบ
+ซื้อช่อดอกไม้สำเร็จรูป, **ออกแบบช่อเอง (custom design)** พร้อม preview 3D และ **AI Preview (รูปช่อสมจริง)**, มี **AI chatbot "Ask AI"** ช่วยแนะนำ / จัดช่อตามงบ
 
 | | ลิงก์ |
 |---|---|
@@ -19,29 +19,29 @@
 |---|---|---|
 | สมัคร / Login / ลืมรหัสผ่าน / ตั้งรหัสใหม่ | `components/login/*` | เปิดเป็น popup จาก Navbar, ใช้ cookie (httpOnly) + refresh token อัตโนมัติ |
 | หน้าแรก | `pages/HomePage` | Custom design, Curated collections (สินค้า popular), Care guide, รีวิวลูกค้า, Shop blog |
-| **Custom design** | `HomePage/_components/Customdesign.jsx` | เลือก base (กระดาษห่อ/แจกัน) + ดอกไม้ 3 ชนิด + จำนวน, preview 3D (`@google/model-viewer`), **Save เป็น preset 1–5**, Add to cart |
+| **Custom design** | `HomePage/_components/Customdesign.jsx` | เลือก base (กระดาษห่อ/แจกัน) + ดอกไม้ 3 ชนิด + จำนวน, preview 3D (`@google/model-viewer`, ลากหมุนได้), **Save เป็น preset 1–5**, Add to cart |
+| **AI Preview** | `useDesignPreview.js`, `PreviewPanel.jsx`, `lib/previewHistory.js` | ปุ่ม **Preview** ข้างปุ่ม Save → AI สร้างรูปช่อสมจริงแทนโมเดล 3D (ต้อง login, **3 รูป/วัน**) · caption บอกจำนวนดอกจริง · เปลี่ยนตัวเลือกหลัง preview → ป้ายเตือน "รูปไม่ตรงกับช่อ" · history 10 รูปล่าสุด (กดเพื่อดู + เติมตัวเลือกกลับ, ช่อเดิมไม่เสียโควตา) · **Save แล้วรูปติดไปกับช่อ** (เห็นใน Custom List) |
 | สินค้า | `pages/Products` | ค้นหา + filter ตามประเภท / curated collections |
-| ตะกร้า | `pages/CartPage.jsx` | เพิ่ม/ลดจำนวน, ลบ, gift note (สูงสุด 200 ตัวอักษร) — **ราคาคิดที่ backend** |
+| ตะกร้า | `pages/CartPage.jsx` | เพิ่ม/ลดจำนวน, ลบ, gift note (สูงสุด 200 ตัวอักษร) — **ราคาคิดที่ backend** · ช่อ custom ที่เซฟพร้อมรูปแสดงรูป AI *(PR `custom-image-order` รอ merge)* |
 | Checkout + จ่ายเงิน | `pages/CheckoutPage.jsx`, `PaymentQRModal.jsx` | สรุปยอด (ค่าบริการช่อ custom ฿100/ช่อ, ค่าส่ง ฿10) → QR **PromptPay ผ่าน Stripe** → รอสถานะ succeeded |
-| Customer dashboard | `pages/customer_dashboard` | บัญชี, ที่อยู่จัดส่ง (CRUD), **ช่อที่เซฟไว้** (แก้ไข / ลบ / ใส่ตะกร้า), ประวัติการสั่งซื้อ |
+| Customer dashboard | `pages/customer_dashboard` | บัญชี, ที่อยู่จัดส่ง (CRUD), **ช่อที่เซฟไว้** พร้อมรูป AI (แก้ไข / ลบ / ใส่ตะกร้า), ประวัติการสั่งซื้อ (ยกเลิกได้ตอน pending / processing) |
 | Shop blog | `pages/ShopBlogPage.jsx` | บทความดูแลดอกไม้ ฯลฯ |
-| **Ask AI chatbot** | `components/ChatWidget.jsx` | ปุ่มลอยมุมขวาล่าง (ต้อง login) ถามสินค้า/ราคา, **"ช่วยจัดช่อ custom งบ X"**, ถามตะกร้า/ช่อที่เซฟของตัวเอง, จำบทสนทนา — *อยู่ใน branch `AIchatBot` รอ merge* |
+| **Ask AI chatbot** | `components/ChatWidget.jsx` | ปุ่มลอยมุมขวาล่าง (ต้อง login) ถามสินค้า/ราคา, **"ช่วยจัดช่อ custom งบ X"** (มีฟอร์ม 2 ช่อง: ให้ใคร/โอกาส + งบ), ถามตะกร้า/ช่อที่เซฟของตัวเอง, จำบทสนทนา · AI แนะนำช่อแล้วมีปุ่ม **Generate preview** → พาไปหน้า Custom design เติมตัวเลือกให้ + สร้างรูปอัตโนมัติ |
 
 ### แอดมิน (admin)
 | Feature | component | รายละเอียด |
 |---|---|---|
-| Overview | `admin_dashboard/_components/Overview.jsx` | สรุปยอดขาย / กราฟ (recharts) |
-| จัดการสินค้า | `ProductEdit.jsx` | CRUD สินค้า (แท็บ Products), วัตถุดิบ (แท็บ Inventory), **ปุ่ม Sync AI** *(branch `AIchatBot`)* |
-| รายการ order | `OrderList.jsx` | ดู / เปลี่ยนสถานะ order |
+| Overview | `admin_dashboard/_components/Overview.jsx` | การ์ด 4 ใบ (Total Sales / Customers / Flower Stock / Orders), กราฟ Sale Statistic (7 / 30 / 90 วัน), Shipment Status, Top 5 Flowers, Recent Order (recharts) — *การ์ด + กราฟยอดขาย: PR `sprint3-admin-dashboard` รอ merge* |
+| จัดการสินค้า | `ProductEdit.jsx` | CRUD สินค้า (แท็บ Products), วัตถุดิบ (แท็บ Inventory), **ปุ่ม Sync AI** |
+| รายการ order | `OrderList.jsx` | ดู / ค้นหา / กรอง / เปลี่ยนสถานะ / ลบ order (แบ่งหน้า) |
 | จัดการ content | `ContentEdit.jsx` | จัดการบทความ blog |
 
-### สถานะการต่อ API (ณ 2026-09-24)
+### สถานะการต่อ API (ณ 2026-09-26)
 | ส่วน | สถานะ |
 |---|---|
-| Auth, สินค้า, ตะกร้า, custom design, ที่อยู่, รีวิว, blog (หน้าลูกค้า), payment, AI chatbot | ✅ ต่อ API จริง |
-| Admin Overview, OrderList, ContentEdit | ⏳ ยังใช้ mock data (`src/assets/mockData`) |
-| ประวัติสั่งซื้อ (Purchases) | ⏳ เก็บใน state ของ `CartContext` (หายเมื่อ refresh) รอ order API |
-| แท็บ Inventory ใน ProductEdit | ⏳ ยังไม่มี inventory API ฝั่ง backend |
+| Auth, สินค้า, ตะกร้า, custom design, AI Preview, ที่อยู่, รีวิว, blog (หน้าลูกค้า), payment, order (Purchases), AI chatbot | ✅ ต่อ API จริง |
+| Admin Overview, OrderList, ProductEdit (รวมแท็บ Inventory) | ✅ ต่อ API จริง |
+| Admin ContentEdit | ⏳ ยังใช้ mock data (`src/assets/mockData`) |
 
 ---
 
@@ -56,6 +56,8 @@
 | Form | react-hook-form + zod |
 | Chart | recharts (หน้า admin) |
 | 3D | `@google/model-viewer` (preview ช่อดอกไม้ `flower.glb`) |
+| AI | เรียกผ่าน backend ทั้งหมด (Gemini สำหรับแชท, Cloudflare FLUX.2 สำหรับรูป) — frontend ไม่มี API key |
+| เก็บในเครื่อง | `localStorage` — history รูป AI preview (ย่อเป็น webp 640px ด้วย `<canvas>`, แยกตาม user) |
 | Icon | lucide-react, hugeicons |
 | Lint | oxlint |
 | Deploy | Vercel (`vercel.json` rewrite ทุก path ไป `index.html` สำหรับ SPA) |
@@ -75,18 +77,20 @@ src/
 │   ├── login/              # LoginPage, RegisterPage, ForgetPassword, RenewPassword (popup)
 │   ├── ProductCard.jsx, PopularProducts.jsx, PopShopBlog.jsx
 │   ├── PaymentQRModal.jsx, OrderConfirmed.jsx
-│   ├── ChatWidget.jsx, SyncAiButton.jsx     # AI chatbot (branch AIchatBot)
+│   ├── ChatWidget.jsx, SyncAiButton.jsx     # AI chatbot + ปุ่ม Sync AI (admin)
 │   └── ui/                 # shadcn components (button, card, table, select, ...)
 ├── context/
 │   ├── AuthContext.jsx     # user, isLoggedIn, login/logout, axios `api` + interceptor refresh token
 │   └── CartContext.jsx     # ตะกร้า (ดึงจาก backend), addToCart / addCustomToCart / increase / decrease / gift note
 ├── lib/                    # ตัวเรียก API แยกตามเรื่อง
 │   ├── cartApi.js, customDesignApi.js, productApi.js
-│   ├── aiApi.js            # askAI, syncAiKnowledge (branch AIchatBot)
+│   ├── aiApi.js            # askAI, syncAiKnowledge, previewDesign, getPreviewQuota
+│   ├── previewHistory.js   # history รูป AI ใน localStorage (10 รูปล่าสุด, ย่อรูป)
 │   └── utils.js
 ├── hooks/useAdminOrders.js
 ├── pages/
 │   ├── HomePage/           # HomePage + Customdesign, Careguide, CustomerReview, ShopDetail
+│   │   └── _components/    # useDesignPreview.js (logic ปุ่ม Preview), PreviewPanel.jsx (รูป / loading / history)
 │   ├── Products/           # ProductsPage + filter bar
 │   ├── CartPage.jsx, CheckoutPage.jsx, ShopBlogPage.jsx
 │   ├── customer_dashboard/ # Account, Address, CustomList (ช่อที่เซฟ), PurchasesItems
@@ -162,8 +166,8 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 | สมาชิก | งานหลักฝั่ง frontend |
 |---|---|
-| Jittrin P. | Cart (ต่อ API), Custom design, CustomList, AI chatbot (ChatWidget, Sync AI), Admin Overview, Footer, Shop blog |
-| Albert Phonbut | Login / Register / Forget / Renew password, Cart page UI, AsideAdmin, Address, Review, Stripe payment |
+| Jittrin P. | Cart (ต่อ API), Custom design, CustomList, AI chatbot (ChatWidget, Sync AI), AI Preview, Admin Overview, Footer, Shop blog |
+| Albert Phonbut | Login / Register / Forget / Renew password, Cart page UI, AsideAdmin, Address, Review, Stripe payment, Admin Overview (การ์ด + กราฟยอดขาย) |
 | Maliwan Rodsomrit | Landing, Customer dashboard (Account, Aside), Checkout, OrderConfirmed, OrderList, Products / ShopBlog ต่อ API, ContentEdit |
 | วิทวัส ภิระบรรณ์ | Navbar, Products page, PopProducts, PurchasesItems, Auth ต่อ API, Product CRUD |
 | Poramet N. | Homepage, CustomerAddress, ProductEdit (admin), Custom product (3D) |
