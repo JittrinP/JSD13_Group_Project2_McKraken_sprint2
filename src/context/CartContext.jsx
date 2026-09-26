@@ -47,7 +47,8 @@ function toCartItem(item) {
     item_type: item.item_type,
     name: specs.design_name,
     description: specs.design_description,
-    images: [CUSTOM_PLACEHOLDER_IMAGE],
+    // มีรูป AI preview ของช่อที่เซฟไว้ (backend เติมให้ใน GET /cart) → ใช้รูปนั้น ไม่มี → placeholder
+    images: [specs.preview_image_url || CUSTOM_PLACEHOLDER_IMAGE],
     unit_price: item.unit_price,
     line_total: item.line_total,
     quantity: item.quantity,
