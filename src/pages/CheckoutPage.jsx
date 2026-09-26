@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import OrderConfirmed from "../components/OrderConfirmed";
 import PaymentQRModal from "../components/PaymentQRModal"; // popup โชว์ QR PromptPay ตอนกด Confirmed Order[cite: 30]
+import { MapPin } from "lucide-react";
 
 import qrcode from "../assets/images/payment-qrcode.svg";
 import alipay from "../assets/images/payment-alipay.svg";
@@ -214,13 +215,38 @@ export default function CheckoutPage() {
           Delivery Address
         </h1>
         <div className="font-semibold text-neutral/90 text-xl bg-white rounded-2xl px-6 sm:px-8 py-4 shadow-lg shadow-black/4">
-          {isLoggedIn && deliveryAddress ? (
+          {/* กรณีที่ 1: ยังไม่ได้ล็อกอิน */}
+          {!isLoggedIn && <p>Please log in to Checkout.</p>}
+
+          {/* กรณีที่ 2: ล็อกอินแล้ว แต่ยังไม่ได้ตั้งค่าที่อยู่ (เช่น user ที่เพิ่งสมัครใหม่) */}
+          {isLoggedIn && !deliveryAddress && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#E9EAFE] border-2 border-D-text/40 rounded-xl p-4">
+              <div className="flex flex-row items-center gap-3">
+                <MapPin className="w-8 h-8 text-D-text shrink-0" />
+                <div>
+                  <p className="text-D-text font-bold">
+                    No delivery address yet
+                  </p>
+                  <p className="text-base font-normal text-neutral/70">
+                    Please add your address before confirming the order.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/customerdashboard/address"
+                className="text-lg text-center bg-D-text text-[#FFFFFF] px-6 py-2 rounded-full shadow-md hover:bg-[#38436c] whitespace-nowrap"
+              >
+                Add your address
+              </Link>
+            </div>
+          )}
+
+          {/* กรณีที่ 3: ล็อกอินแล้ว และมีที่อยู่แล้ว */}
+          {isLoggedIn && deliveryAddress && (
             <>
               <p className="mb-2">{deliveryAddress}</p>
               <p>Phone: {defaultAddress.phone || "N/A"}</p>
             </>
-          ) : (
-            <p>Please log in to Checkout.</p>
           )}
         </div>
       </section>
