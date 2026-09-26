@@ -32,8 +32,11 @@ export default function PurchaseItem() {
             price: item.unit_price,
             // อนุญาตให้ยกเลิกได้เฉพาะตอน pending หรือ processing
             canCancel: order.order_status === "pending" || order.order_status === "processing", 
-            // ดึงรูปที่ populate มา หรือใช้รูป placeholder สำหรับช่อ custom 
-            image: item.product_id?.images?.[0] || "https://placehold.co/62x62?text=Custom+Bouquet",
+            // ดึงรูปที่ populate มา · ช่อ custom ใช้รูป AI preview ที่ก๊อปไว้ใน order · ไม่มีทั้งคู่ใช้ placeholder
+            image:
+              item.product_id?.images?.[0] ||
+              item.custom_specs?.preview_image_url ||
+              "https://placehold.co/62x62?text=Custom+Bouquet",
           };
         })
       );
