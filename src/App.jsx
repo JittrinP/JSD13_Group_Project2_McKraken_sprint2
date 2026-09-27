@@ -1,4 +1,8 @@
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Navigate,
+  RouterProvider,
+} from "react-router-dom";
 import { useState } from "react";
 import "./App.css";
 
@@ -11,6 +15,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import CustomerDashboardPage from "./pages/customer_dashboard/CustomerDashboardPage";
 
 // children ของ AdminDashboardPage
+import AdminProtectedRoute from "./components/AdminProtectedRoute"; // ดัก Role
 import AdminDashboardPage from "./pages/admin_dashboard/AdminDashboardPage";
 import Overview from "./pages/admin_dashboard/_components/Overview";
 import ProductEdit from "./pages/admin_dashboard/_components/ProductEdit";
@@ -34,7 +39,9 @@ const router = createBrowserRouter([
       { path: "/shopblog", element: <ShopBlogPage /> },
       { path: "/cart", element: <CartPage /> },
       { path: "/checkout", element: <CheckoutPage /> },
-      { path: "/customerdashboard", element: <CustomerDashboardPage />,
+      {
+        path: "/customerdashboard",
+        element: <CustomerDashboardPage />,
         children: [
           { index: true, element: <Navigate to="account" replace /> },
           { path: "account", element: <CustomerAccount /> },
@@ -43,9 +50,14 @@ const router = createBrowserRouter([
           { path: "address", element: <CustomerAddress /> },
           { path: "favorite", element: <CustomerFav /> },
         ],
-       },
+      },
       {
-        path: "/admindashboard", element: <AdminDashboardPage />,
+        path: "/admindashboard",
+        element: (
+          <AdminProtectedRoute>
+            <AdminDashboardPage />
+          </AdminProtectedRoute>
+        ),
         children: [
           { path: "overview", element: <Overview /> },
           { path: "product-edit", element: <ProductEdit /> },
