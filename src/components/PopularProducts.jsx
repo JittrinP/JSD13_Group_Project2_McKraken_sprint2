@@ -28,14 +28,16 @@ export default function PopularProducts() {
 
   return (
     <section className="w-full">
-      {/* ปรับเป็น max-w-7xl เพื่อให้ตรงแนวเดียวกับ Navbar */}
-      <div className="flex justify-between items-center mb-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-xl sm:text-2xl font-display font-semibold text-primary">
+      {/* ใช้ max-w-7xl + px-4 sm:px-8 ให้ตรงแนวเดียวกับ Navbar และ Popular Blog */}
+      <div className="flex justify-between items-baseline gap-4 mb-6 max-w-7xl mx-auto px-4 sm:px-8">
+        {/* ขนาดและน้ำหนักฟอนต์เท่ากับหัวข้อ Popular Blog */}
+        <h2 className="text-primary font-display text-2xl font-bold md:text-3xl">
           Curated Collections
         </h2>
+        {/* สไตล์ลิงก์เหมือน "View all blog" */}
         <a
           href="/products"
-          className="text-xs text-primary hover:underline whitespace-nowrap font-medium"
+          className="shrink-0 font-body text-sm text-neutral/80 hover:text-primary whitespace-nowrap"
         >
           View all collections
         </a>

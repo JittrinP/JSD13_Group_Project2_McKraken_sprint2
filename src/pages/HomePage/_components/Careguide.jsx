@@ -12,9 +12,11 @@ export default function Careguide() {
     }, []);
 
     return (
-        <section className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-tertiary">
-            <div className="max-w-7xl mx-auto flex justify-center">
-                <div className="bg-secondary rounded-4xl overflow-hidden max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 shadow-sm border border-black/5">
+        // ใส่ font-body ที่ section เพราะข้อความในการ์ดนี้ไม่ได้กำหนดฟอนต์ไว้ เลยไปใช้ฟอนต์ของ browser แทน
+        <section className="w-full py-16 bg-tertiary font-body">
+            {/* ใช้ max-w-7xl + px-4 sm:px-8 ให้ตรงแนวเดียวกับ Navbar */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-8">
+                <div className="bg-secondary rounded-4xl overflow-hidden w-full grid grid-cols-1 md:grid-cols-2 shadow-sm border border-black/5">
 
                     {/* Left Section: Content */}
                     <div className="p-8 sm:p-10 md:p-12 flex flex-col justify-center">
@@ -28,7 +30,7 @@ export default function Careguide() {
                         </div>
 
                         {/* Heading */}
-                        <h1 className="font-display text-3xl sm:text-4xl md:text-[42px] font-bold text-primary leading-tight mb-4">
+                        <h1 className="font-display text-3xl sm:text-4xl font-bold text-primary leading-tight mb-4">
                             Keep Them Blooming
                         </h1>
 
