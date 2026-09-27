@@ -347,6 +347,21 @@ export default function OrderList() {
                   </div>
                 ))}
               </div>
+              {/* แยกราคาให้เห็นว่า Grand total มาจากอะไรบ้าง (subtotal + service + delivery) */}
+              <div className="mt-4 space-y-2 border-t border-[#ECEDEF] pt-4 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-[#667092]">Subtotal</span>
+                  <span className="font-medium text-[#475486]">{formatCurrency(selectedOrder.subtotal)}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-[#667092]">Service fee</span>
+                  <span className="font-medium text-[#475486]">{formatCurrency(selectedOrder.serviceFee)}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-[#667092]">Delivery fee</span>
+                  <span className="font-medium text-[#475486]">{formatCurrency(selectedOrder.deliveryFee)}</span>
+                </div>
+              </div>
               <div className="mt-4 flex justify-between border-t border-[#ECEDEF] pt-4 font-semibold text-[#475486]">
                 <span>Grand total</span>
                 <span>{formatCurrency(selectedOrder.grandTotal)}</span>

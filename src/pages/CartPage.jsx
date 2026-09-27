@@ -173,35 +173,13 @@ function Cart() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
           {/* Item List Section (2 cols on Desktop) */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Edit Icon */}
-            <div className="flex justify-end pr-1">
-              <button
-                aria-label="Edit cart"
-                className="text-[#4A4A4A]/70 hover:text-[#586158] transition-colors p-1 bg-white/60 sm:bg-transparent rounded-lg"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.8"
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-              </button>
-            </div>
-
             {cartError && (
               <p className="text-center text-sm text-red-600">{cartError}</p>
             )}
 
             {items.length === 0 ? (
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-10 border border-black/5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] text-center text-[#4A4A4A]/60">
-                ยังไม่มีของในตะกร้า
+                Your cart is empty.
               </div>
             ) : (
               items.map((item) => (
@@ -217,7 +195,7 @@ function Cart() {
           </div>
 
           {/* Items Summary Card */}
-          <div className="lg:col-span-1 lg:mt-9">
+          <div className="lg:col-span-1">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col justify-between space-y-6">
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-[#586158] mb-3 tracking-tight">
