@@ -51,6 +51,9 @@ function mapOrderFromApi(order) {
     customer_email: customer?.email || "",
     created_at: order.createdAt, // backend ใช้ createdAt (camelCase) จาก timestamps
     grandTotal: order.payment_pricing?.grand_total ?? 0, // ยอดรวมอยู่ใน payment_pricing
+    subtotal: order.payment_pricing?.subtotal ?? 0, // ราคาสินค้ารวม (ยังไม่รวมค่าบริการ/ค่าส่ง)
+    serviceFee: order.payment_pricing?.service_fee ?? 0, // backend ใช้ service_fee (snake_case)
+    deliveryFee: order.payment_pricing?.delivery_fee ?? 0, // backend ใช้ delivery_fee (snake_case)
     status: order.order_status,
     deliveryAddress: formatAddress(order.delivery_info?.shipping_address),
     items: (order.items || []).map((item, index) => ({
