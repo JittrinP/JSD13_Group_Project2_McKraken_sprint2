@@ -39,6 +39,7 @@ function formatCurrency(value) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "THB",
+    currencyDisplay: "narrowSymbol", // แสดงเป็น ฿ แทนคำว่า THB
     maximumFractionDigits: 0,
   }).format(value);
 }
