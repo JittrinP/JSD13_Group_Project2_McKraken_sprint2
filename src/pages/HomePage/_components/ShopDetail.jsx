@@ -43,8 +43,10 @@ const FlowerLogoIcon = () => (
 export default function ShopDetail() {
   return (
     // กำหนด id="shop-detail" เพื่อรองรับการ Scroll มาจาก Footer.jsx (<Link to="/#shop-detail">)
-    <section id="shop-detail" className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-tertiary">
-      <div className="max-w-6xl mx-auto bg-secondary rounded-3xl p-8 sm:p-12 md:p-16 shadow-sm border border-black/5">
+    <section id="shop-detail" className="w-full py-16 bg-tertiary">
+      {/* ใช้ max-w-7xl + px-4 sm:px-8 ให้ตรงแนวเดียวกับ Navbar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
+      <div className="bg-secondary rounded-3xl p-8 sm:p-12 md:p-16 shadow-sm border border-black/5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           
           {/* ฝั่งซ้าย: ข้อมูลร้าน ประวัติ ที่อยู่ และเวลาเปิดทำการ (8 คอลัมน์บนจอใหญ่) */}
@@ -135,6 +137,7 @@ export default function ShopDetail() {
           </div>
 
         </div>
+      </div>
       </div>
     </section>
   );

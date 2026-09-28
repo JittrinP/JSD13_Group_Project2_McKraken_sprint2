@@ -99,8 +99,9 @@ export default function CustomerReview() {
   }, []);
 
   return (
-    <section className="w-full py-16 px-4 sm:px-6 lg:px-8 bg-tertiary">
-      <div className="max-w-7xl mx-auto">
+    <section className="w-full py-16 bg-tertiary">
+      {/* ย้าย padding เข้ามาใน max-w-7xl ให้ตรงแนวเดียวกับ Navbar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
         <h2 className="font-display text-3xl md:text-4xl text-center text-primary font-bold mb-12 tracking-wide">
           Notes from our Friends
         </h2>
